@@ -12,6 +12,10 @@ import (
 type Config struct {
 	AccessKey string `ini:"access_key"`
 	SecretKey string `ini:"secret_key"`
+
+    Recursive     bool  `ini:recursive`
+    Force     bool  `ini:force`
+    SkipExisting     bool  `ini:skip_existing`
 }
 
 // Read the configuration file if found, otherwise return default configuration
@@ -40,11 +44,20 @@ func NewConfig(c *cli.Context) *Config {
 		config.SecretKey = *value
 	}
 
-	if c.IsSet("access_key") {
+	if c.GlobalIsSet("access_key") {
 		config.AccessKey = c.GlobalString("access_key")
 	}
-	if c.IsSet("secret_key") {
+	if c.GlobalIsSet("secret_key") {
 		config.AccessKey = c.GlobalString("secret_key")
+	}
+	if c.GlobalIsSet("force") {
+		config.Force = c.GlobalBool("force")
+	}
+	if c.GlobalIsSet("skip-existing") {
+		config.SkipExisting = c.GlobalBool("skip-existing")
+	}
+	if c.GlobalIsSet("recursive") {
+		config.Recursive = c.GlobalBool("recursive")
 	}
 
 	// fmt.Println(config)

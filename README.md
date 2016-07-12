@@ -18,13 +18,16 @@ DONE -
 * s3cmd rb s3://BUCKET
 * s3cmd ls [s3://BUCKET[/PREFIX]]
 * s3cmd la
-
-TODO - for full compatibility:
-
 * s3cmd put FILE [FILE...] s3://BUCKET[/PREFIX]
 * s3cmd get s3://BUCKET/OBJECT LOCAL_FILE
 * s3cmd del s3://BUCKET/OBJECT
 * s3cmd rm s3://BUCKET/OBJECT
+
+TODO - for full compatibility:
+
+* s3cmd get -- handle recursive
+* s3cmd del -- handle recursive
+
 * s3cmd restore s3://BUCKET/OBJECT
 * s3cmd sync LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR
 * s3cmd du [s3://BUCKET[/PREFIX]]
