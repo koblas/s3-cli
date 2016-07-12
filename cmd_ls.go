@@ -8,8 +8,6 @@ import (
 	"net/url"
 )
 
-const DATE_FMT = "2006-01-02 15:04"
-
 func ListBucket(config *Config, c *cli.Context) error {
 	args := c.Args()
 
@@ -41,6 +39,12 @@ func ListBucket(config *Config, c *cli.Context) error {
 	if u.Path != "" && u.Path != "/" {
 		params.Prefix = aws.String(u.Path[1:])
 	}
+
+    if loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: &u.Host}); err != nil {
+        return err
+    } else if (loc.LocationConstraint != nil) {
+        svc = SessionRegion(svc, *loc.LocationConstraint)
+    }
 
 	for true {
 		resp, err := svc.ListObjectsV2(params)

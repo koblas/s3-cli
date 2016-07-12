@@ -72,7 +72,7 @@ func main() {
 		{
 			Name:   "la",
 			Usage:  "List all object in all buckets -- s3-cli la",
-			Action: launch(CmdNotImplemented),
+			Action: launch(ListAll),
 		},
 		{
 			Name:   "put",
