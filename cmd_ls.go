@@ -40,14 +40,10 @@ func ListBucket(config *Config, c *cli.Context) error {
 		params.Prefix = aws.String(u.Path[1:])
 	}
 
-    if loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: &u.Host}); err != nil {
-        return err
-    } else if (loc.LocationConstraint != nil) {
-        svc = SessionRegion(svc, *loc.LocationConstraint)
-    }
+    bsvc := SessionForBucket(svc, u.Host)
 
 	for true {
-		resp, err := svc.ListObjectsV2(params)
+		resp, err := bsvc.ListObjectsV2(params)
 		if err != nil {
 			return err
 		}

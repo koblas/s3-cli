@@ -14,7 +14,6 @@ func ListAll(config *Config, c *cli.Context) error {
     }
 
 	svc := SessionNew(config)
-    origsvc := svc
 
     var params *s3.ListBucketsInput
     resp, err := svc.ListBuckets(params)
@@ -29,16 +28,10 @@ func ListAll(config *Config, c *cli.Context) error {
             MaxKeys:   aws.Int64(1000),
         }
 
-        if loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket.Name}); err != nil {
-            return err
-        } else if (loc.LocationConstraint != nil) {
-            svc = SessionRegion(svc, *loc.LocationConstraint)
-        } else {
-            svc = origsvc
-        }
+        bsvc := SessionForBucket(svc, *bucket.Name)
 
         for true {
-            resp, err := svc.ListObjectsV2(params)
+            resp, err := bsvc.ListObjectsV2(params)
             if err != nil {
                 return err
             }

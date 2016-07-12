@@ -1,21 +1,26 @@
 # s3-cli
 Go version of s3cmd
 
-Why? Because I needed to copy about 1TB from S3 to my local machine and noticed that s3cmd is a total pig when it comes to "sync" operations and there really isn't any good alternatives. The only alternative that I found was a nodejs one which while better crashed under some cirucumstances.
+Why? Because I needed to copy about 1TB from S3 to my local machine
+and noticed that s3cmd is a total pig when it comes to "sync"
+operations and there really isn't any good alternatives. The only
+alternative that I found was a nodejs one which while better crashed
+under some cirucumstances.
 
-This should also end up being a good example of the S3 GoLang API as well.
+This should also end up being a good example of the S3 GoLang API as well. Though the 
+AWS Go Lang SDK for S3 has really good examples.
 
-Note: This is current a work in progress. 
+Note: This is current a work in progress, like most of the universe.
 
 DONE - 
 
 * s3cmd mb s3://BUCKET
 * s3cmd rb s3://BUCKET
 * s3cmd ls [s3://BUCKET[/PREFIX]]
+* s3cmd la
 
 TODO - for full compatibility:
 
-* s3cmd la
 * s3cmd put FILE [FILE...] s3://BUCKET[/PREFIX]
 * s3cmd get s3://BUCKET/OBJECT LOCAL_FILE
 * s3cmd del s3://BUCKET/OBJECT
@@ -52,4 +57,3 @@ TODO - for full compatibility:
 * s3cmd cfdelete cf://DIST_ID
 * s3cmd cfmodify cf://DIST_ID
 * s3cmd cfinvalinfo cf://DIST_ID[/INVAL_ID]
-
