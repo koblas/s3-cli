@@ -52,3 +52,4 @@ TODO - for full compatibility:
 * s3cmd cfdelete cf://DIST_ID
 * s3cmd cfmodify cf://DIST_ID
 * s3cmd cfinvalinfo cf://DIST_ID[/INVAL_ID]
+
