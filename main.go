@@ -63,7 +63,7 @@ func main() {
 		{
 			Name:  "rb",
 			Usage: "Remove bucket -- s3-cli mb s3://BUCKET",
-			Action: launch(CmdNotImplemented),
+			Action: launch(RemoveBucket),
 		},
 		{
 			Name:  "ls",
@@ -86,8 +86,13 @@ func main() {
 			Action: launch(CmdNotImplemented),
 		},
 		{
+			Name:  "del",
+			Usage: "Delete file from bucket -- s3-cli del s3://BUCKET/OBJECT",
+			Action: launch(CmdNotImplemented),
+		},
+		{
 			Name:  "rm",
-			Usage: "Delete file from bucket -- s3-cli rm s3://BUCKET/OBJECT",
+			Usage: "Delete file from bucket (del synonym) -- s3-cli rm s3://BUCKET/OBJECT",
 			Action: launch(CmdNotImplemented),
 		},
 	}

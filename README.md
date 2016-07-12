@@ -9,12 +9,12 @@ Note: This is current a work in progress.
 
 DONE - 
 
+* s3cmd mb s3://BUCKET
+* s3cmd rb s3://BUCKET
 * s3cmd ls [s3://BUCKET[/PREFIX]]
 
 TODO - for full compatibility:
 
-* s3cmd mb s3://BUCKET
-* s3cmd rb s3://BUCKET
 * s3cmd la
 * s3cmd put FILE [FILE...] s3://BUCKET[/PREFIX]
 * s3cmd get s3://BUCKET/OBJECT LOCAL_FILE
@@ -52,6 +52,3 @@ TODO - for full compatibility:
 * s3cmd cfdelete cf://DIST_ID
 * s3cmd cfmodify cf://DIST_ID
 * s3cmd cfinvalinfo cf://DIST_ID[/INVAL_ID]
-
-
-
