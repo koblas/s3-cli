@@ -3,24 +3,23 @@ package main
 import (
 	"fmt"
 	"os"
-    // "log"
+	// "log"
 	"github.com/urfave/cli"
 )
 
 type CmdHandler func(*Config, *cli.Context) error
 
 func CmdNotImplemented(*Config, *cli.Context) error {
-    return fmt.Errorf("Command not implemented")
+	return fmt.Errorf("Command not implemented")
 }
 
 func main() {
-    // Now the setup for the application
+	// Now the setup for the application
 
 	cliapp := cli.NewApp()
 	cliapp.Name = "s3-cli"
 	// cliapp.Usage = ""
 	cliapp.Version = "0.1.0"
-
 
 	cliapp.Flags = []cli.Flag{
 		cli.StringSliceFlag{
@@ -42,57 +41,57 @@ func main() {
 		},
 	}
 
-    // The wrapper to launch a command -- take care of standard setup 
-    //  before we get going
-    launch := func(handler CmdHandler) (func(*cli.Context) error) {
-        return func(c *cli.Context) error {
-            err := handler(NewConfig(c), c)
-            if err != nil {
-                fmt.Println(err.Error())
-            }
-            return err
-        }
-    }
+	// The wrapper to launch a command -- take care of standard setup
+	//  before we get going
+	launch := func(handler CmdHandler) func(*cli.Context) error {
+		return func(c *cli.Context) error {
+			err := handler(NewConfig(c), c)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			return err
+		}
+	}
 
 	cliapp.Commands = []cli.Command{
 		{
-			Name:  "mb",
-			Usage: "Make bucket -- s3-cli mb s3://BUCKET",
+			Name:   "mb",
+			Usage:  "Make bucket -- s3-cli mb s3://BUCKET",
 			Action: launch(MakeBucket),
 		},
 		{
-			Name:  "rb",
-			Usage: "Remove bucket -- s3-cli mb s3://BUCKET",
+			Name:   "rb",
+			Usage:  "Remove bucket -- s3-cli mb s3://BUCKET",
 			Action: launch(RemoveBucket),
 		},
 		{
-			Name:  "ls",
-			Usage: "List objects or buckets -- s3-cli ls [s3://BUCKET[/PREFIX]]",
+			Name:   "ls",
+			Usage:  "List objects or buckets -- s3-cli ls [s3://BUCKET[/PREFIX]]",
 			Action: launch(ListBucket),
 		},
 		{
-			Name:  "la",
-			Usage: "List all object in all buckets -- s3-cli la",
+			Name:   "la",
+			Usage:  "List all object in all buckets -- s3-cli la",
 			Action: launch(CmdNotImplemented),
 		},
 		{
-			Name:  "put",
-			Usage: "Get file from bucket -- s3-cli put FILE [FILE....] s3://BUCKET/PREFIX",
+			Name:   "put",
+			Usage:  "Get file from bucket -- s3-cli put FILE [FILE....] s3://BUCKET/PREFIX",
 			Action: launch(CmdNotImplemented),
 		},
 		{
-			Name:  "get",
-			Usage: "Get file from bucket -- s3-cli get s3://BUCKET/OBJECT LOCAL_FILE",
+			Name:   "get",
+			Usage:  "Get file from bucket -- s3-cli get s3://BUCKET/OBJECT LOCAL_FILE",
 			Action: launch(CmdNotImplemented),
 		},
 		{
-			Name:  "del",
-			Usage: "Delete file from bucket -- s3-cli del s3://BUCKET/OBJECT",
+			Name:   "del",
+			Usage:  "Delete file from bucket -- s3-cli del s3://BUCKET/OBJECT",
 			Action: launch(CmdNotImplemented),
 		},
 		{
-			Name:  "rm",
-			Usage: "Delete file from bucket (del synonym) -- s3-cli rm s3://BUCKET/OBJECT",
+			Name:   "rm",
+			Usage:  "Delete file from bucket (del synonym) -- s3-cli rm s3://BUCKET/OBJECT",
 			Action: launch(CmdNotImplemented),
 		},
 	}
