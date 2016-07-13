@@ -14,6 +14,35 @@ import (
 
 // TODO: Handle arguments
 // --recursive
+
+// Check arguments:
+// if not --recursive:
+//   - first N arguments must be S3Uri
+//   - if the last one is S3 make current dir the destination_base
+//   - if the last one is a directory:
+//       - take all 'basenames' of the remote objects and
+//         make the destination name be 'destination_base'+'basename'
+//   - if the last one is a file or not existing:
+//       - if the number of sources (N, above) == 1 treat it
+//         as a filename and save the object there.
+//       - if there's more sources -> Error
+// if --recursive:
+//   - first N arguments must be S3Uri
+//       - for each Uri get a list of remote objects with that Uri as a prefix
+//       - apply exclude/include rules
+//       - each list item will have MD5sum, Timestamp and pointer to S3Uri
+//         used as a prefix.
+//   - the last arg may be '-' (stdout)
+//   - the last arg may be a local directory - destination_base
+//   - if the last one is S3 make current dir the destination_base
+//   - if the last one doesn't exist check remote list:
+//       - if there is only one item and its_prefix==its_name
+//         download that item to the name given in last arg.
+//       - if there are more remote items use the last arg as a destination_base
+//         and try to create the directory (incl. all parents).
+//
+// In both cases we end up with a list mapping remote object names (keys) to local file names.
+
 func GetObject(config *Config, c *cli.Context) error {
 	args := c.Args()
     if len(args) != 2 {

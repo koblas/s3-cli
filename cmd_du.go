@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
+	// "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/urfave/cli"
 	"net/url"
@@ -37,28 +37,12 @@ func GetUsage(config *Config, c *cli.Context) error {
             bucketSize, bucketObjs  int64
         )
 
-        params := &s3.ListObjectsV2Input{
-            Bucket:    aws.String(u.Host), // Required
-            // Delimiter: aws.String("/"),
-        }
-        if u.Path != "" && u.Path != "/" {
-            params.Prefix = aws.String(u.Path[1:])
-        }
-
-        pager := func(page *s3.ListObjectsV2Output, lastPage bool) (bool) {
+        remotePager(config, svc, arg, false, func(page *s3.ListObjectsV2Output) {
             for _, obj := range page.Contents {
                 bucketSize += *obj.Size
                 bucketObjs += 1
             }
-            return true
-        }
-
-        bsvc := SessionForBucket(svc, u.Host)
-
-        if err := bsvc.ListObjectsV2Pages(params, pager); err != nil {
-            fmt.Println(err)
-            continue
-        }
+        })
 
         fmt.Printf("%d %d objects %s\n", bucketSize, bucketObjs, arg)
     }
