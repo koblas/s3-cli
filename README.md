@@ -1,4 +1,5 @@
 # s3-cli
+
 Go version of s3cmd
 
 Why? Because I needed to copy about 1TB from S3 to my local machine
@@ -22,6 +23,7 @@ DONE -
 * s3cmd get s3://BUCKET/OBJECT LOCAL_FILE
 * s3cmd del s3://BUCKET/OBJECT
 * s3cmd rm s3://BUCKET/OBJECT
+* s3cmd du [s3://BUCKET[/PREFIX]]
 
 TODO - for full compatibility:
 
@@ -30,11 +32,11 @@ TODO - for full compatibility:
 
 * s3cmd restore s3://BUCKET/OBJECT
 * s3cmd sync LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR
-* s3cmd du [s3://BUCKET[/PREFIX]]
 * s3cmd info s3://BUCKET[/OBJECT]
 * s3cmd cp s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
 * s3cmd modify s3://BUCKET1/OBJECT
 * s3cmd mv s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
+
 * s3cmd setacl s3://BUCKET[/OBJECT]
 * s3cmd setpolicy FILE s3://BUCKET
 * s3cmd delpolicy s3://BUCKET
