@@ -36,6 +36,10 @@ func main() {
 			Usage: "AWS Secret Key `SECRET_KEY`",
 		},
 		cli.BoolFlag{
+			Name:  "recursive",
+			Usage: "Recursive upload, download or removal",
+		},
+		cli.BoolFlag{
 			Name:  "force",
 			Usage: "Force overwrite and other dangerous operations.",
 		},
@@ -102,6 +106,17 @@ func main() {
 			Usage:  "Delete file from bucket (del synonym) -- s3-cli rm s3://BUCKET/OBJECT",
 			Action: launch(DeleteObjects),
 		},
+		{
+			Name:   "du",
+			Usage:  "Disk usage by buckets -- [s3://BUCKET[/PREFIX]]",
+			Action: launch(GetUsage),
+		},
+        // sync
+        // du
+        // info
+        // cp
+        // modify
+        // mv
 	}
 
 	cliapp.Run(os.Args)
