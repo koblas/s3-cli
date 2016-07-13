@@ -26,45 +26,68 @@ func ListBucket(config *Config, c *cli.Context) error {
 		return nil
 	}
 
-	u, err := url.Parse(args[0])
-	if err != nil || u.Scheme != "s3" {
-		return fmt.Errorf("ls requires buckets to be prefixed with s3://")
-	}
+    return listBucket(config, svc, args)
+}
 
-	params := &s3.ListObjectsV2Input{
-		Bucket:    aws.String(u.Host), // Required
-		Delimiter: aws.String("/"),
-		MaxKeys:   aws.Int64(1000),
-	}
-	if u.Path != "" && u.Path != "/" {
-		params.Prefix = aws.String(u.Path[1:])
-	}
+func listBucket(config *Config, svc *s3.S3, args []string) error {
+    for _, arg := range args {
+        u, err := url.Parse(arg)
+        if err != nil || u.Scheme != "s3" {
+            return fmt.Errorf("ls requires buckets to be prefixed with s3://")
+        }
 
-    bsvc := SessionForBucket(svc, u.Host)
+        todo := []string{arg}
 
-	for true {
-		resp, err := bsvc.ListObjectsV2(params)
-		if err != nil {
-			return err
-		}
+        params := &s3.ListObjectsV2Input{
+            Bucket:    aws.String(u.Host), // Required
+            Delimiter: aws.String("/"),
+            MaxKeys:   aws.Int64(1000),
+        }
 
-		if resp.CommonPrefixes != nil {
-			for _, item := range resp.CommonPrefixes {
-				fmt.Printf("%16s %9s   s3://%s/%s\n", "", "DIR", u.Host, *item.Prefix)
-			}
-		}
-		if resp.Contents != nil {
-			for _, item := range resp.Contents {
-				fmt.Printf("%16s %9d   s3://%s/%s\n", item.LastModified.Format(DATE_FMT), *item.Size, u.Host, *item.Key)
-			}
-		}
+        for len(todo) != 0 {
+            var item string
+            item, todo = todo[0], todo[1:]
 
-		if resp.IsTruncated != nil && !*resp.IsTruncated {
-			break
-		}
+            u2, _ := url.Parse(item)
 
-		params.ContinuationToken = resp.NextContinuationToken
-	}
+            if u2.Path != "" && u2.Path != "/" {
+                params.Prefix = aws.String(u2.Path[1:])
+            }
+
+            bsvc := SessionForBucket(svc, u.Host)
+
+            // Iterate through everything.
+            for true {
+                resp, err := bsvc.ListObjectsV2(params)
+                if err != nil {
+                    return err
+                }
+
+                if resp.CommonPrefixes != nil {
+                    for _, item := range resp.CommonPrefixes {
+                        uri := fmt.Sprintf("s3://%s/%s", u.Host, *item.Prefix)
+
+                        if config.Recursive {
+                            todo = append(todo, uri)
+                        } else {
+                            fmt.Printf("%16s %9s   %s\n", "", "DIR", uri)
+                        }
+                    }
+                }
+                if resp.Contents != nil {
+                    for _, item := range resp.Contents {
+                        fmt.Printf("%16s %9d   s3://%s/%s\n", item.LastModified.Format(DATE_FMT), *item.Size, u.Host, *item.Key)
+                    }
+                }
+
+                if resp.IsTruncated != nil && !*resp.IsTruncated {
+                    break
+                }
+
+                params.ContinuationToken = resp.NextContinuationToken
+            }
+        }
+    }
 
 	return nil
 }
