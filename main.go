@@ -37,6 +37,7 @@ func main() {
 			Usage: "AWS Secret Key `SECRET_KEY`",
             EnvVar: "AWS_SECRET_ACCESS_KEY",
 		},
+
 		cli.BoolFlag{
 			Name:  "recursive,r",
 			Usage: "Recursive upload, download or removal",
@@ -48,6 +49,11 @@ func main() {
 		cli.BoolFlag{
 			Name:  "skip-existing",
 			Usage: "Skip over files that exist at the destination (only for [get] and [sync] commands).",
+		},
+
+		cli.BoolFlag{
+			Name:  "verbose",
+			Usage: "Verbose output (e.g. debugging)",
 		},
 		cli.BoolFlag{
 			Name:  "dry-run,n",
@@ -94,14 +100,14 @@ func main() {
 		},
 		{
 			Name:   "put",
-			Usage:  "Put file from bucket -- s3-cli put FILE [FILE....] s3://BUCKET/PREFIX",
-			Action: launch(PutObject),
+			Usage:  "Put file from bucket (really 'cp') -- s3-cli put FILE [FILE....] s3://BUCKET/PREFIX",
+			Action: launch(CmdCopy),
             Flags: cliapp.Flags,
 		},
 		{
 			Name:   "get",
-			Usage:  "Get file from bucket -- s3-cli get s3://BUCKET/OBJECT LOCAL_FILE",
-			Action: launch(GetObject),
+			Usage:  "Get file from bucket (really 'cp') -- s3-cli get s3://BUCKET/OBJECT LOCAL_FILE",
+			Action: launch(CmdCopy),
             Flags: cliapp.Flags,
 		},
 		{
@@ -122,10 +128,15 @@ func main() {
 			Action: launch(GetUsage),
             Flags: cliapp.Flags,
 		},
+		{
+			Name:   "cp",
+			Usage:  "copy files and directories -- SRC [SRC...] DST",
+			Action: launch(CmdCopy),
+            Flags: cliapp.Flags,
+		},
         // sync
         // du
         // info
-        // cp
         // modify
         // mv
 	}

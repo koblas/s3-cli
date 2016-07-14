@@ -24,16 +24,17 @@ DONE -
 * s3cmd del s3://BUCKET/OBJECT
 * s3cmd rm s3://BUCKET/OBJECT
 * s3cmd du [s3://BUCKET[/PREFIX]]
+* s3cmd cp s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
+
+TODO - not 100% ready
+
+* s3cmd rm  -- handle recursive
 
 TODO - for full compatibility:
-
-* s3cmd get -- handle recursive
-* s3cmd del -- handle recursive
 
 * s3cmd restore s3://BUCKET/OBJECT
 * s3cmd sync LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR
 * s3cmd info s3://BUCKET[/OBJECT]
-* s3cmd cp s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
 * s3cmd modify s3://BUCKET1/OBJECT
 * s3cmd mv s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
 

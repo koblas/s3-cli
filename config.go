@@ -18,6 +18,8 @@ type Config struct {
 	AccessKey string `ini:"access_key"`
 	SecretKey string `ini:"secret_key"`
 
+    DryRun      bool  `ini:dry_run`
+    Verbose     bool  `ini:verbose`
     Recursive     bool  `ini:recursive`
     Force     bool  `ini:force`
     SkipExisting     bool  `ini:skip_existing`
