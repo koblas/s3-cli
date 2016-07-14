@@ -30,13 +30,15 @@ func main() {
 		cli.StringFlag{
 			Name:  "access_key",
 			Usage: "AWS Access Key `ACCESS_KEY`",
+            EnvVar: "AWS_ACCESS_KEY_ID",
 		},
 		cli.StringFlag{
 			Name:  "secret_key",
 			Usage: "AWS Secret Key `SECRET_KEY`",
+            EnvVar: "AWS_SECRET_ACCESS_KEY",
 		},
 		cli.BoolFlag{
-			Name:  "recursive",
+			Name:  "recursive,r",
 			Usage: "Recursive upload, download or removal",
 		},
 		cli.BoolFlag{
@@ -70,46 +72,55 @@ func main() {
 			Name:   "mb",
 			Usage:  "Make bucket -- s3-cli mb s3://BUCKET",
 			Action: launch(MakeBucket),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "rb",
 			Usage:  "Remove bucket -- s3-cli mb s3://BUCKET",
 			Action: launch(RemoveBucket),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "ls",
 			Usage:  "List objects or buckets -- s3-cli ls [s3://BUCKET[/PREFIX]]",
 			Action: launch(ListBucket),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "la",
 			Usage:  "List all object in all buckets -- s3-cli la",
 			Action: launch(ListAll),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "put",
 			Usage:  "Put file from bucket -- s3-cli put FILE [FILE....] s3://BUCKET/PREFIX",
 			Action: launch(PutObject),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "get",
 			Usage:  "Get file from bucket -- s3-cli get s3://BUCKET/OBJECT LOCAL_FILE",
 			Action: launch(GetObject),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "del",
 			Usage:  "Delete file from bucket -- s3-cli del s3://BUCKET/OBJECT",
 			Action: launch(DeleteObjects),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "rm",
 			Usage:  "Delete file from bucket (del synonym) -- s3-cli rm s3://BUCKET/OBJECT",
 			Action: launch(DeleteObjects),
+            Flags: cliapp.Flags,
 		},
 		{
 			Name:   "du",
 			Usage:  "Disk usage by buckets -- [s3://BUCKET[/PREFIX]]",
 			Action: launch(GetUsage),
+            Flags: cliapp.Flags,
 		},
         // sync
         // du

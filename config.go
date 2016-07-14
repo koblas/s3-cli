@@ -1,7 +1,9 @@
 package main
 
 import (
-	// "fmt"
+    // "fmt"
+    "strings"
+    "reflect"
 	"github.com/go-ini/ini"
 	"github.com/urfave/cli"
 	"path"
@@ -9,6 +11,9 @@ import (
 
 // This is the global configuration, it's loaded from .s3cfg (by default) then with added
 //  overrides from the command line
+//
+// Command lines are by default the snake case version of the the struct names with "-" instead of "_"
+//
 type Config struct {
 	AccessKey string `ini:"access_key"`
 	SecretKey string `ini:"secret_key"`
@@ -27,7 +32,9 @@ type Config struct {
 func NewConfig(c *cli.Context) *Config {
 	cfgPath := "/.s3cfg"
 
-	if c.IsSet("config") {
+	if c.GlobalIsSet("config") {
+		cfgPath = c.GlobalString("config")
+	} else if c.IsSet("config") {
 		cfgPath = c.String("config")
 	} else {
 		if value := GetEnv("HOME"); value != nil {
@@ -37,30 +44,7 @@ func NewConfig(c *cli.Context) *Config {
 
 	config := loadConfigFile(cfgPath)
 
-	if value := GetEnv("AWS_ACCESS_KEY_ID"); value != nil {
-		config.AccessKey = *value
-	}
-	if value := GetEnv("AWS_SECRET_ACCESS_KEY"); value != nil {
-		config.SecretKey = *value
-	}
-
-	if c.GlobalIsSet("access_key") {
-		config.AccessKey = c.GlobalString("access_key")
-	}
-	if c.GlobalIsSet("secret_key") {
-		config.AccessKey = c.GlobalString("secret_key")
-	}
-	if c.GlobalIsSet("force") {
-		config.Force = c.GlobalBool("force")
-	}
-	if c.GlobalIsSet("skip-existing") {
-		config.SkipExisting = c.GlobalBool("skip-existing")
-	}
-	if c.GlobalIsSet("recursive") {
-		config.Recursive = c.GlobalBool("recursive")
-	}
-
-	// fmt.Println(config)
+    parseOptions(config, c)
 
 	return config
 }
@@ -76,4 +60,55 @@ func loadConfigFile(path string) *Config {
 	}
 
 	return &config
+}
+
+// Pull the options out of the cli.Context and save them into the configuration object
+func parseOptions(config *Config, c *cli.Context) {
+    rt := reflect.TypeOf(*config)
+    rv := reflect.ValueOf(config)
+
+    for i := 0; i < rt.NumField(); i++ {
+        field := rt.Field(i)
+
+        name := ""
+        if field.Tag.Get("cli") != "" {
+            name = field.Tag.Get("cli")
+        } else {
+            name = strings.Replace(CamelToSnake(field.Name), "_", "-", -1)
+        }
+
+        gset := c.GlobalIsSet(name)
+        lset := c.IsSet(name)
+
+        if !gset && !lset {
+            continue
+        }
+
+        f := rv.Elem().FieldByName(field.Name)
+
+        if !f.IsValid() || !f.CanSet() {
+            continue
+        }
+
+        switch f.Kind() {
+        case reflect.Bool:
+            if lset {
+                f.SetBool(c.Bool(name))
+            } else {
+                f.SetBool(c.GlobalBool(name))
+            }
+        case reflect.String:
+            if lset {
+                f.SetString(c.String(name))
+            } else {
+                f.SetString(c.GlobalString(name))
+            }
+        case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
+            if lset {
+                f.SetInt(c.Int64(name))
+            } else {
+                f.SetInt(c.GlobalInt64(name))
+            }
+        }
+    }
 }
