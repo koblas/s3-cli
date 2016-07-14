@@ -85,12 +85,12 @@ func copyTo(config *Config, src, dst *url.URL) error {
 
     if config.Recursive {
         if src.Scheme == "s3" {
+            // Get the remote file list and start copying
             svc := SessionForBucket(SessionNew(config), src.Host)
             basePath := src.Path[1:]
 
             remotePager(config, svc, src.String(), false, func(page *s3.ListObjectsV2Output) {
                 for _, obj := range page.Contents {
-                    // doCopy(src, dst)
                     src_path := *obj.Key
                     src_path = src_path[len(basePath):]
 
@@ -106,12 +106,11 @@ func copyTo(config *Config, src, dst *url.URL) error {
                     dst_uri.Scheme = dst.Scheme
                     src_uri, _ := url.Parse("s3://" + src.Host + "/" + *obj.Key)
 
-                    // fmt.Printf("Copy %s -> %s\n", src_uri.String(), dst_uri.String())
                     doCopy(src_uri, dst_uri)
                 }
             })
         } else {
-            // TODO: get Local file list
+            // Get the local file list and start copying
             err := filepath.Walk(src.Path, func (path string, info os.FileInfo, _ error) error {
                 if info == nil || info.IsDir() {
                     return nil
@@ -127,18 +126,15 @@ func copyTo(config *Config, src, dst *url.URL) error {
                 dst_uri.Scheme = dst.Scheme
                 src_uri, _ := url.Parse("file://" + path)
 
-                // fmt.Printf("Copy %s -> %s\n", src_uri.String(), dst_uri.String())
-                doCopy(src_uri, dst_uri)
-                return nil
+                return doCopy(src_uri, dst_uri)
             })
             if err != nil {
                 return err
             }
         }
     } else {
-        doCopy(src, dst)
+        return doCopy(src, dst)
     }
-
     return nil
 }
 
