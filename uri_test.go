@@ -21,9 +21,23 @@ func TestURI(t *testing.T) {
     value = "test/of/test.txt"
     uri, err = FileURINew(value)
     if err != nil {
-        t.Error("error parsing #3")
+        t.Error("error parsing ", value)
     }
     if uri.Path != "test/of/test.txt" || uri.Scheme != "file" || uri.Bucket != "" {
         t.Error("error parsing ", value)
+    }
+
+    // Test joins -- first file
+    value = "test/of/test.txt"
+    uri, err = FileURINew(value)
+    if err != nil {
+        t.Error("error parsing ", value)
+    }
+
+    if turi := uri.Join("/new/file.txt"); turi.Path != "/new/file.txt" {
+        t.Error("error join /new/file.txt", turi.Path)
+    }
+    if turi := uri.Join("new/file.txt"); turi.Path != "test/of/new/file.txt" {
+        t.Error("error join new/file.txt", turi.Path)
     }
 }

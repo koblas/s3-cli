@@ -2,6 +2,8 @@ package main
 
 import (
     "fmt"
+    "path"
+    "path/filepath"
 	"net/url"
 )
 
@@ -55,4 +57,20 @@ func (uri *FileURI) String() string {
     } else {
         return fmt.Sprintf("file://%s", uri.Path)
     }
+}
+
+// Do a path.Join() style operation on this FileURI to generate a new one
+func (uri *FileURI) Join(elem string) *FileURI {
+    nuri := FileURI{
+        Scheme: uri.Scheme,
+        Bucket: uri.Bucket,
+    }
+
+    if elem[0] == '/' {
+        nuri.Path = elem
+    } else {
+        nuri.Path = path.Join(filepath.Dir(uri.Path), elem)
+    }
+
+    return &nuri
 }
