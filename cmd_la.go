@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	// "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/urfave/cli"
 )
@@ -23,6 +22,8 @@ func ListAll(config *Config, c *cli.Context) error {
 
     for _, bucket := range resp.Buckets {
         uri := fmt.Sprintf("s3://%s", *bucket.Name)
+
+        // Shared with "ls"
         listBucket(config, svc, []string{uri})
     }
 

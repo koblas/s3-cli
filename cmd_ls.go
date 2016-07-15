@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/urfave/cli"
-	"net/url"
 )
 
 func ListBucket(config *Config, c *cli.Context) error {
@@ -30,7 +29,7 @@ func ListBucket(config *Config, c *cli.Context) error {
 
 func listBucket(config *Config, svc *s3.S3, args []string) error {
     for _, arg := range args {
-        u, err := url.Parse(arg)
+        u, err := FileURINew(arg)
         if err != nil || u.Scheme != "s3" {
             return fmt.Errorf("ls requires buckets to be prefixed with s3://")
         }
@@ -43,7 +42,7 @@ func listBucket(config *Config, svc *s3.S3, args []string) error {
 
             remotePager(config, svc, item, !config.Recursive, func(page *s3.ListObjectsV2Output) {
                 for _, item := range page.CommonPrefixes {
-                    uri := fmt.Sprintf("s3://%s/%s", u.Host, *item.Prefix)
+                    uri := fmt.Sprintf("s3://%s/%s", u.Bucket, *item.Prefix)
 
                     if config.Recursive {
                         todo = append(todo, uri)
@@ -53,7 +52,7 @@ func listBucket(config *Config, svc *s3.S3, args []string) error {
                 }
                 if page.Contents != nil {
                     for _, item := range page.Contents {
-                        fmt.Printf("%16s %9d   s3://%s/%s\n", item.LastModified.Format(DATE_FMT), *item.Size, u.Host, *item.Key)
+                        fmt.Printf("%16s %9d   s3://%s/%s\n", item.LastModified.Format(DATE_FMT), *item.Size, u.Bucket, *item.Key)
                     }
                 }
             })

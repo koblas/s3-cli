@@ -59,6 +59,14 @@ func main() {
 			Name:  "dry-run,n",
 			Usage: "Only show what should be uploaded or downloaded but don't actually do it. May still perform S3 requests to get bucket listings and other information though (only for file transfer commands)",
 		},
+		cli.BoolFlag{
+			Name:  "check-md5",
+			Usage: "Check MD5 sums when comparing files for [sync].  (default)",
+		},
+		cli.BoolFlag{
+			Name:  "no-check-md5",
+			Usage: "Do not check MD5 sums when comparing files for [sync].  Only size will be compared. May significantly speed up transfer but may also miss some changed files.",
+		},
 	}
 
 	// The wrapper to launch a command -- take care of standard setup
@@ -134,10 +142,19 @@ func main() {
 			Action: launch(CmdCopy),
             Flags: cliapp.Flags,
 		},
-        // sync
-        // du
+		{
+			Name:   "sync",
+			Usage:  "Synchronize a directory tree to S3 -- LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR",
+			Action: launch(CmdSync),
+            Flags: cliapp.Flags,
+		},
+		{
+			Name:   "modify",
+			Usage:  "Modify object metadata -- s3://BUCKET1/OBJECT",
+			Action: launch(Modify),
+            Flags: cliapp.Flags,
+		},
         // info
-        // modify
         // mv
 	}
 

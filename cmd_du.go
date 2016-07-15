@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	// "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/urfave/cli"
-	"net/url"
 )
 
 func GetUsage(config *Config, c *cli.Context) error {
@@ -28,7 +26,8 @@ func GetUsage(config *Config, c *cli.Context) error {
 
     // Get the usage for the buckets
     for _, arg := range args {
-        u, err := url.Parse(arg)
+        // Only do usage on S3 buckets
+        u, err := FileURINew(arg)
         if err != nil || u.Scheme != "s3" {
             continue
         }
@@ -46,7 +45,6 @@ func GetUsage(config *Config, c *cli.Context) error {
 
         fmt.Printf("%d %d objects %s\n", bucketSize, bucketObjs, arg)
     }
-    // fmt.Printf("%d bytes\n", totalSize)
 
 	return nil
 }

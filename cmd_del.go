@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/urfave/cli"
-	"net/url"
 )
 
 // TODO: Handle --recusrive
@@ -18,7 +17,7 @@ func DeleteObjects(config *Config, c *cli.Context) error {
     buckets := make(map[string][]*s3.ObjectIdentifier, 0)
 
     for _, path := range args {
-        u, err := url.Parse(args[0])
+        u, err := FileURINew(args[0])
 
         if err != nil || u.Scheme != "s3" {
             return fmt.Errorf("ls requires buckets to be prefixed with s3://")
@@ -28,11 +27,11 @@ func DeleteObjects(config *Config, c *cli.Context) error {
             return fmt.Errorf("Parameter problem: Expecting S3 URI with a filename or --recursive: %s", path)
         }
 
-        objects := buckets[u.Host]
+        objects := buckets[u.Bucket]
         if objects == nil {
             objects = make([]*s3.ObjectIdentifier, 0)
         }
-        buckets[u.Host] = append(objects, &s3.ObjectIdentifier{ Key: aws.String(u.Path[1:]) })
+        buckets[u.Bucket] = append(objects, &s3.ObjectIdentifier{ Key: u.Key() })
     }
 
     // FIXME: Limited to 1000 objects, that's that shouldn't be an issue, but ...

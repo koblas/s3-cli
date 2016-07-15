@@ -18,11 +18,12 @@ type Config struct {
 	AccessKey string `ini:"access_key"`
 	SecretKey string `ini:"secret_key"`
 
-    DryRun      bool  `ini:dry_run`
-    Verbose     bool  `ini:verbose`
-    Recursive     bool  `ini:recursive`
-    Force     bool  `ini:force`
-    SkipExisting     bool  `ini:skip_existing`
+    CheckMD5  bool  `ini:"check_md5" cli:"check-md5"`
+    DryRun      bool  `ini:"dry_run"`
+    Verbose     bool  `ini:"verbose"`
+    Recursive     bool  `ini:"recursive"`
+    Force     bool  `ini:"force"`
+    SkipExisting     bool  `ini:"skip_existing"`
 }
 
 // Read the configuration file if found, otherwise return default configuration
@@ -47,6 +48,10 @@ func NewConfig(c *cli.Context) *Config {
 	config := loadConfigFile(cfgPath)
 
     parseOptions(config, c)
+
+    if c.GlobalIsSet("no-check-md5") || c.IsSet("no-check-md5") {
+        config.CheckMD5 = false
+    }
 
 	return config
 }
