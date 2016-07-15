@@ -53,7 +53,7 @@ func (uri *FileURI) Key() *string {
 // Return a string version of the path
 func (uri *FileURI) String() string {
     if uri.Scheme == "s3" {
-        return fmt.Sprintf("s3://%s/%s", uri.Bucket, uri.Key())
+        return fmt.Sprintf("s3://%s/%s", uri.Bucket, *uri.Key())
     } else {
         return fmt.Sprintf("file://%s", uri.Path)
     }
@@ -66,7 +66,9 @@ func (uri *FileURI) Join(elem string) *FileURI {
         Bucket: uri.Bucket,
     }
 
-    if elem[0] == '/' {
+    if elem == "" {
+        nuri.Path = uri.Path
+    } else if elem[0] == '/' {
         nuri.Path = elem
     } else {
         nuri.Path = path.Join(filepath.Dir(uri.Path), elem)

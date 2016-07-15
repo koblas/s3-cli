@@ -11,6 +11,9 @@ func TestURI(t *testing.T) {
     if err != nil || uri.Scheme != "s3" || uri.Bucket != "bucket-name" || *uri.Key() != "file.txt" {
         t.Error("error parsing ", value)
     }
+    if uri.String() != value {
+        t.Error("roundtrip ", value, uri.String())
+    }
 
     value = "xxx://bucket-name/a/b/c/file.txt"
     uri, err = FileURINew("xxx://bucket-name/a/b/c/file.txt")
@@ -25,6 +28,9 @@ func TestURI(t *testing.T) {
     }
     if uri.Path != "test/of/test.txt" || uri.Scheme != "file" || uri.Bucket != "" {
         t.Error("error parsing ", value)
+    }
+    if uri.String() != "file://test/of/test.txt" {
+        t.Error("roundtrip ", value, uri.String())
     }
 
     // Test joins -- first file
