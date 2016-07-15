@@ -1,17 +1,97 @@
-# s3-cli
+# s3-cli -- Go version of s3cmd
 
-Go version of s3cmd
+Command line utility frontend to the [AWS Go SDK](http://docs.aws.amazon.com/sdk-for-go/api/)
+for S3.  Inspired by [s3cmd](https://github.com/s3tools/s3cmd) and attempts to be a
+drop-in replacement. 
 
-Why? Because I needed to copy about 1TB from S3 to my local machine
-and noticed that s3cmd is a total pig when it comes to "sync"
-operations and there really isn't any good alternatives. The only
-alternative that I found was a nodejs one which while better crashed
-under some cirucumstances.
+## Features
 
-This should also end up being a good example of the S3 GoLang API as well. Though the 
-AWS Go Lang SDK for S3 has really good examples.
+* Compatible with [s3cmd](https://github.com/s3tools/s3cmd)'s config file
+* Supports a subset of s3cmd's commands and parameters
+  - including `put`, `get`, `del`, `ls`, `sync`, `cp`, `mv`
+  - commands are much smarter (get, put, cp - can move to and from S3)
+* When syncing directories, instead of uploading one file at a time, it 
+  uploads many files in parallel resulting in more bandwidth.
+* Uses multipart uploads for large files and uploads each part in parallel. This is
+  accomplished using the s3manager that comes with the SDK
+* More efficent at using CPU and resources on your local machine
 
-Note: This is current a work in progress, like most of the universe.
+## Install
+
+`go get github.com/koblas/s3-cli`
+
+## Configuration
+
+s3-cli is compatible with s3cmd's config file, so if you already have that
+configured, you're all set. Otherwise you can put this in `~/.s3cfg`:
+
+```ini
+[default]
+access_key = foo
+secret_key = bar
+```
+
+You can also point it to another config file with e.g. `$ s3-cli --config /path/to/s3cmd.conf ...`.
+
+## Documentation
+
+### cp
+
+Copy files to and from S3
+
+Example:
+
+```
+s3-cli cp /path/to/file s3://bucket/key/on/s3
+s3-cli cp s3://bucket/key/on/s3 /path/to/file
+s3-cli cp s3://bucket/key/on/s3 s3://another-bucket/some/thing
+```
+
+### get
+
+Download a file from S3 -- really an alias for `cp`
+
+### put
+
+Upload a file to S3 -- really an alias for `cp`
+
+### del
+
+Deletes an object or a directory on S3.
+
+Example:
+
+```
+s3-cli del [--recursive] s3://bucket/key/on/s3/
+```
+
+### rm
+
+Alias for `del`
+
+```
+s3-cli rm [--recursive] s3://bucket/key/on/s3/
+```
+
+### sync
+
+Sync a local directory to S3
+
+```
+s3-cli sync [--delete-removed] /path/to/folder/ s3://bucket/key/on/s3/
+```
+
+### mv
+
+Move an object which is already on S3.
+
+Example:
+
+```
+s3-cli mv s3://sourcebucket/source/key s3://destbucket/dest/key
+```
+
+### General Notes about s3cmd commpatability
 
 DONE - 
 
@@ -26,11 +106,11 @@ DONE -
 * s3cmd du [s3://BUCKET[/PREFIX]]
 * s3cmd cp s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
 * s3cmd modify s3://BUCKET1/OBJECT
+* s3cmd sync LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR
 
 TODO - not 100% ready
 
 * s3cmd rm  -- handle recursive
-* s3cmd sync LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR
 
 TODO - for full compatibility:
 
