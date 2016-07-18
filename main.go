@@ -154,6 +154,12 @@ func main() {
 			Action: launch(Modify),
             Flags: cliapp.Flags,
 		},
+		{
+			Name:   "info",
+			Usage:  "Get various information about Buckets or Files -- s3://BUCKET[/OBJECT]",
+			Action: launch(GetInfo),
+            Flags: cliapp.Flags,
+		},
         // info
         // mv
 	}

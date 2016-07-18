@@ -107,11 +107,11 @@ DONE -
 * s3cmd cp s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
 * s3cmd modify s3://BUCKET1/OBJECT
 * s3cmd sync LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR
+* s3cmd info s3://BUCKET[/OBJECT]
 
 TODO - for full compatibility (with s3cmd)
 
 * s3cmd restore s3://BUCKET/OBJECT
-* s3cmd info s3://BUCKET[/OBJECT]
 * s3cmd mv s3://BUCKET1/OBJECT1 s3://BUCKET2[/OBJECT2]
 
 * s3cmd setacl s3://BUCKET[/OBJECT]
