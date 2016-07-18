@@ -20,10 +20,10 @@ func DeleteObjects(config *Config, c *cli.Context) error {
         u, err := FileURINew(args[0])
 
         if err != nil || u.Scheme != "s3" {
-            return fmt.Errorf("ls requires buckets to be prefixed with s3://")
+            return fmt.Errorf("rm requires buckets to be prefixed with s3://")
         }
 
-        if u.Path == "" || strings.HasSuffix(u.Path, "/") {
+        if (u.Path == "" || strings.HasSuffix(u.Path, "/")) && !config.Recursive {
             return fmt.Errorf("Parameter problem: Expecting S3 URI with a filename or --recursive: %s", path)
         }
 
@@ -36,18 +36,47 @@ func DeleteObjects(config *Config, c *cli.Context) error {
 
     // FIXME: Limited to 1000 objects, that's that shouldn't be an issue, but ...
     for bucket, objects := range buckets {
-        params := &s3.DeleteObjectsInput{
-            Bucket: aws.String(bucket), // Required
-            Delete: &s3.Delete{ // Required
-                Objects: objects,
-            },
-        }
-
         bsvc := SessionForBucket(svc, bucket)
 
-        _, err := bsvc.DeleteObjects(params)
-        if err != nil {
-            return err
+        if config.Recursive {
+            for _, obj := range objects {
+                uri := fmt.Sprintf("s3://%s/%s", bucket, *obj.Key)
+
+                remotePager(config, svc, uri, false, func (page *s3.ListObjectsV2Output) {
+                    olist := make([]*s3.ObjectIdentifier, 0)
+                    for _, item := range page.Contents {
+                        olist = append(olist, &s3.ObjectIdentifier{ Key: item.Key })
+
+                        fmt.Printf("delete: s3://%s/%s\n", bucket, *item.Key)
+                    }
+
+                    if !config.DryRun {
+                        params := &s3.DeleteObjectsInput{
+                            Bucket: aws.String(bucket), // Required
+                            Delete: &s3.Delete{
+                                Objects: olist,
+                            },
+                        }
+
+                        _, err := bsvc.DeleteObjects(params)
+                        if err != nil {
+                            fmt.Println("Error removing")
+                        }
+                    }
+                })
+            }
+        } else if !config.DryRun {
+            params := &s3.DeleteObjectsInput{
+                Bucket: aws.String(bucket), // Required
+                Delete: &s3.Delete{ // Required
+                    Objects: objects,
+                },
+            }
+
+            _, err := bsvc.DeleteObjects(params)
+            if err != nil {
+                return err
+            }
         }
         for _, objs := range objects {
             fmt.Printf("delete: s3://%s/%s\n", bucket, *objs.Key)

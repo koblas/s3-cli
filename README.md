@@ -108,11 +108,7 @@ DONE -
 * s3cmd modify s3://BUCKET1/OBJECT
 * s3cmd sync LOCAL_DIR s3://BUCKET[/PREFIX] or s3://BUCKET[/PREFIX] LOCAL_DIR
 
-TODO - not 100% ready
-
-* s3cmd rm  -- handle recursive
-
-TODO - for full compatibility:
+TODO - for full compatibility (with s3cmd)
 
 * s3cmd restore s3://BUCKET/OBJECT
 * s3cmd info s3://BUCKET[/OBJECT]

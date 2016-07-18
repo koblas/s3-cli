@@ -31,7 +31,7 @@ func FileURINew(path string) (*FileURI, error) {
     if uri.Scheme == "" {
         uri.Scheme = "file"
     }
-    if uri.Scheme == "s3" {
+    if uri.Scheme == "s3" && uri.Path != "" {
         uri.Path = uri.Path[1:]
     }
     if uri.Path == "" && uri.Scheme == "s3" {
@@ -72,6 +72,22 @@ func (uri *FileURI) Join(elem string) *FileURI {
         nuri.Path = elem
     } else {
         nuri.Path = path.Join(filepath.Dir(uri.Path), elem)
+        if elem[len(elem)-1] == '/' {
+            nuri.Path += "/"
+        }
+    }
+
+    return &nuri
+}
+
+func (uri *FileURI) SetPath(elem string) *FileURI {
+    nuri := FileURI{
+        Scheme: uri.Scheme,
+        Bucket: uri.Bucket,
+        Path: elem,
+    }
+    if uri.Path == "" && uri.Scheme == "s3" {
+        uri.Path = "/"
     }
 
     return &nuri

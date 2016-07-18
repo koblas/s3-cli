@@ -83,9 +83,21 @@ func CmdSync(config *Config, c *cli.Context) error {
 
     // Handle the inputs
     src_is_directory := len(srcs) == 1 && strings.HasSuffix(srcs[0].Path, "/")
-    if !src_is_directory && len(srcs) == 1 && srcs[0].Scheme == "file" {
-        if info, err := os.Stat(srcs[0].Path); err == nil {
-            src_is_directory = info.IsDir()
+    if !src_is_directory && len(srcs) == 1 {
+        src := srcs[0]
+        if src.Scheme == "file" {
+            if info, err := os.Stat(src.Path); err == nil {
+                src_is_directory = info.IsDir()
+            }
+        } else {
+            bsvc := SessionForBucket(SessionNew(config), src.Bucket)
+            params := &s3.HeadObjectInput {
+                Bucket: aws.String(src.Bucket),
+                Key:    src.Key(),
+            }
+            if _, err := bsvc.HeadObject(params); err != nil {
+                src_is_directory = true
+            }
         }
     }
 
@@ -191,38 +203,41 @@ func CmdSync(config *Config, c *cli.Context) error {
     } else {
         // directory -> directory
         // If the path doesn't end in a "/" then we prefix the resulting paths with it
-        dropLen := 0
-        prefix := ""
+
+        dropLen := len(srcs[0].Path)
+        prefix := dst_uri.Path
+        if !strings.HasSuffix(prefix, "/") {
+            prefix += "/"
+        }
         if !strings.HasSuffix(srcs[0].Path, "/") {
-            prefix = filepath.Base(srcs[0].Path)
-        } else {
-            dropLen = len(filepath.Base(srcs[0].Path)) + 1
+            prefix += filepath.Base(srcs[0].Path) + "/"
+            dropLen += 1
         }
 
-        src_files, err := buildFileInfo(config, &srcs[0], dropLen)
+        // fmt.Println("DROP len=", dropLen, " prefix=", prefix, " dst_uri=", dst_uri.String())
+
+        src_files, err := buildFileInfo(config, &srcs[0], dropLen, prefix)
         if err != nil {
             return err
         }
 
-        dst_uri = dst_uri.Join(prefix)
-
-        dst_files, err := buildFileInfo(config, dst_uri, dropLen)
+        dst_files, err := buildFileInfo(config, dst_uri, 0, "")
         if err != nil {
             return err
         }
 
         // This loop will add COPIES
         for file, _ := range src_files {
-            addWork(srcs[0].Join(file), src_files[file], dst_uri.Join(file), dst_files[file])
-        }
-        // This loop will add REMOVES from DST
-        for file, _ := range dst_files {
+            // fmt.Println(" FILE = ", file)
             src_info := src_files[file]
-            dst_info := dst_files[file]
-            if src_info != nil && dst_info != nil {
-                continue
+            addWork(srcs[0].SetPath(src_info.Name), src_info, dst_uri.SetPath(file), dst_files[file])
+        }
+        // This loop will add REMOVES from DST 
+        for file, _ := range dst_files {
+            // fmt.Println("Remove Check", file)
+            if src_info := src_files[file]; src_info == nil {
+                addWork(nil, nil, dst_uri.Join(file), dst_files[file])
             }
-            addWork(srcs[0].Join(file), src_info, dst_uri.Join(file), dst_info)
         }
     }
 
@@ -242,7 +257,9 @@ func CmdSync(config *Config, c *cli.Context) error {
                     fmt.Printf("Remove %s\n", item.Dst.String())
                 }
                 if !config.DryRun {
-                    os.Remove(item.Dst.Path)
+                    if err := os.Remove(item.Dst.Path); err != nil {
+                        return err
+                    }
                 }
             }
         case ACT_CHECKSUM:
@@ -254,15 +271,15 @@ func CmdSync(config *Config, c *cli.Context) error {
                     return fmt.Errorf("Unable to get checksum of local file %s", item.Src.String())
                 }
             } else {
-                fmt.Printf("CHECKSUM %s\n", item.Dst.String())
+                // fmt.Printf("CHECKSUM %s\n", item.Dst.String())
                 hash, err = amazonEtagHash(item.Dst.Path)
                 if err != nil {
                     return fmt.Errorf("Unable to get checksum of local file %s", item.Dst.String())
                 }
             }
 
-            fmt.Printf("Got checksum %s local=%s remote=%s\n", item.Src.String(), hash, item.Checksum)
-            if hash != strings.Trim(item.Checksum, "\"") {
+            // fmt.Printf("Got checksum %s local=%s remote=%s\n", item.Src.String(), hash, item.Checksum)
+            if len(item.Checksum) <= 2 || hash != item.Checksum[1:len(item.Checksum)-1] {
                 copyFile(config, item.Src, item.Dst, true)
             }
         }
@@ -319,32 +336,40 @@ func CmdSync(config *Config, c *cli.Context) error {
 
 //  Walk either S3 or the local file system gathering files
 //    files_only == true -- only consider file names, not directories
-func buildFileInfo(config *Config, src *FileURI, dropPrefix int) (map[string]*FileObject, error) {
+//
+//  dropPrefix -- number of characters to remove from the front of the filename
+//
+func buildFileInfo(config *Config, src *FileURI, dropPrefix int, addPrefix string) (map[string]*FileObject, error) {
     files := make(map[string]*FileObject, 0)
 
     if src.Scheme == "s3" {
+        slen := len(*src.Key())
         objs, err := remoteList(config, nil, []string{src.String()})
         if err != nil {
             return files, err
         }
-        dropPrefix = len(src.Path) - 1
+        // dropPrefix -= 1 // no leading '/'
         for idx, obj := range objs {
-            name := obj.Name[dropPrefix:]
+            if obj.Name[slen] != '/' {
+                continue
+            }
+            name := addPrefix + obj.Name[dropPrefix:]
             files[name] = &objs[idx]
-            // fmt.Println("s3 -- ", name, files[name])
+            // fmt.Println("s3 -- name=", name, " path=", obj.Name, " file=", files[name])
         }
     } else {
+        // dropPrefix = len(src.Path)
         err := filepath.Walk(src.Path, func (path string, info os.FileInfo, _ error) error {
             if info == nil || info.IsDir() {
                 return nil
             }
 
-            name := path[dropPrefix:]
+            name := addPrefix + path[dropPrefix:]
             files[name] = &FileObject{
                 Name: path,
                 Size: info.Size(),
             }
-            // fmt.Println("local -- ", name, files[name])
+            // fmt.Println("local -- name=", name, " path=", path, " file=", files[name])
 
             return nil
         })
