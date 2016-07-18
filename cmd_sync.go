@@ -116,6 +116,7 @@ func CmdSync(config *Config, c *cli.Context) error {
     ///==================
     // Note: General improvement here that's pending is to make this a channel based system
     //       where we're dispatching commands at goroutines channels to get acted on.
+    var estimated_bytes int64
 
     type Action struct {
         Type            int
@@ -139,12 +140,14 @@ func CmdSync(config *Config, c *cli.Context) error {
                 Src: src,
                 Dst: dst,
             })
+            estimated_bytes += src_info.Size
         } else if src_info.Size != dst_info.Size {
             work_queue = append(work_queue, Action{
                 Type: ACT_COPY,
                 Src: src,
                 Dst: dst,
             })
+            estimated_bytes += src_info.Size
         } else if config.CheckMD5 {
             if src_info.Checksum != "" && dst_info.Checksum != "" && src_info.Checksum != dst_info.Checksum {
                 work_queue = append(work_queue, Action{
@@ -152,6 +155,7 @@ func CmdSync(config *Config, c *cli.Context) error {
                     Src: src,
                     Dst: dst,
                 })
+                estimated_bytes += src_info.Size
             } else {
                 check := src_info.Checksum
                 if check == "" {
@@ -163,6 +167,7 @@ func CmdSync(config *Config, c *cli.Context) error {
                     Dst: dst,
                     Checksum: check,
                 })
+                estimated_bytes += src_info.Size
             }
         }
     }
@@ -242,7 +247,7 @@ func CmdSync(config *Config, c *cli.Context) error {
     }
 
     if config.Verbose {
-        fmt.Printf("%d files to consider\n", len(work_queue))
+        fmt.Printf("%d files to consider - %d bytes\n", len(work_queue), estimated_bytes)
     }
 
     // Now do the work...
