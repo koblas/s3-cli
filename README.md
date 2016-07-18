@@ -8,7 +8,7 @@ drop-in replacement.
 
 * Compatible with [s3cmd](https://github.com/s3tools/s3cmd)'s config file
 * Supports a subset of s3cmd's commands and parameters
-  - including `put`, `get`, `del`, `ls`, `sync`, `cp`, `mv`
+  - including `put`, `get`, `del`, `ls`, `sync`, `cp`
   - commands are much smarter (get, put, cp - can move to and from S3)
 * When syncing directories, instead of uploading one file at a time, it 
   uploads many files in parallel resulting in more bandwidth.
