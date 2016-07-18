@@ -1,17 +1,30 @@
 package main
 
 import (
+	"sync"
 	"io"
 	"os"
 	"fmt"
     "crypto/md5"
 
-	// "path"
 	"strings"
 	"path/filepath"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/urfave/cli"
+)
+
+// Action for syncing
+type Action struct {
+    Type            int
+    Src             *FileURI
+    Dst             *FileURI
+    Checksum        string
+}
+
+const (
+    NUM_COPY = 4
+    NUM_CHECKSUM = 1
 )
 
 // One command to sync files/directories -- it's always recursive when directories are present
@@ -116,57 +129,75 @@ func CmdSync(config *Config, c *cli.Context) error {
     ///==================
     // Note: General improvement here that's pending is to make this a channel based system
     //       where we're dispatching commands at goroutines channels to get acted on.
-    var estimated_bytes int64
+    var (
+        estimated_bytes int64
+        file_count int64
+        wg sync.WaitGroup
+    )
 
-    type Action struct {
-        Type            int
-        Src             *FileURI
-        Dst             *FileURI
-        Checksum        string
+    chanCopy := make(chan Action, 10)
+    chanChecksum := make(chan Action, 10)
+    chanRemove := make(chan Action, 10)
+
+    wg.Add(1)
+    go workerRemove(config, &wg, chanRemove)
+
+    wg.Add(NUM_CHECKSUM)
+    for i := 0; i < NUM_CHECKSUM; i++ {
+        go workerChecksum(config, &wg, chanChecksum)
     }
 
-    work_queue := make([]Action, 0)
+    wg.Add(NUM_COPY)
+    for i := 0; i < NUM_COPY; i++ {
+        go workerCopy(config, &wg, chanCopy)
+    }
 
     addWork := func (src *FileURI, src_info *FileObject, dst *FileURI, dst_info *FileObject) {
+        if src == nil {
+            fmt.Println("NIL", " -> ", dst.String())
+        } else {
+            fmt.Println(src.String(), " -> ", dst.String())
+        }
+        file_count += 1
         if src_info == nil {
-            work_queue = append(work_queue, Action{
+            chanRemove <- Action{
                 Type: ACT_REMOVE,
                 Src: src,
                 Dst: dst,
-            })
+            }
         } else if dst_info == nil {
-            work_queue = append(work_queue, Action{
+            chanCopy <- Action{
                 Type: ACT_COPY,
                 Src: src,
                 Dst: dst,
-            })
+            }
             estimated_bytes += src_info.Size
         } else if src_info.Size != dst_info.Size {
-            work_queue = append(work_queue, Action{
+            chanCopy <- Action{
                 Type: ACT_COPY,
                 Src: src,
                 Dst: dst,
-            })
+            }
             estimated_bytes += src_info.Size
         } else if config.CheckMD5 {
             if src_info.Checksum != "" && dst_info.Checksum != "" && src_info.Checksum != dst_info.Checksum {
-                work_queue = append(work_queue, Action{
+                chanCopy <- Action{
                     Type: ACT_COPY,
                     Src: src,
                     Dst: dst,
-                })
+                }
                 estimated_bytes += src_info.Size
             } else {
                 check := src_info.Checksum
                 if check == "" {
                     check = dst_info.Checksum
                 }
-                work_queue = append(work_queue, Action{
+                chanChecksum <- Action{
                     Type: ACT_CHECKSUM,
                     Src: src,
                     Dst: dst,
                     Checksum: check,
-                })
+                }
                 estimated_bytes += src_info.Size
             }
         }
@@ -247,94 +278,13 @@ func CmdSync(config *Config, c *cli.Context) error {
     }
 
     if config.Verbose {
-        fmt.Printf("%d files to consider - %d bytes\n", len(work_queue), estimated_bytes)
+        fmt.Printf("%d files to consider - %d bytes\n", file_count, estimated_bytes)
     }
 
-    // Now do the work...
-    for _, item := range work_queue {
-        switch item.Type {
-        case ACT_COPY:
-            copyFile(config, item.Src, item.Dst, true)
-        case ACT_REMOVE:
-            // S3 removes are handled in batch at the end
-            if dst_uri.Scheme == "file" {
-                if config.Verbose {
-                    fmt.Printf("Remove %s\n", item.Dst.String())
-                }
-                if !config.DryRun {
-                    if err := os.Remove(item.Dst.Path); err != nil {
-                        return err
-                    }
-                }
-            }
-        case ACT_CHECKSUM:
-            // src_path := fmt.Sprintf("%s/%s", item.SourceURL.String(), item.Path)
-            var hash string
-            if dst_uri.Scheme == "s3" {
-                hash, err = amazonEtagHash(item.Src.Path)
-                if err != nil {
-                    return fmt.Errorf("Unable to get checksum of local file %s", item.Src.String())
-                }
-            } else {
-                // fmt.Printf("CHECKSUM %s\n", item.Dst.String())
-                hash, err = amazonEtagHash(item.Dst.Path)
-                if err != nil {
-                    return fmt.Errorf("Unable to get checksum of local file %s", item.Dst.String())
-                }
-            }
-
-            // fmt.Printf("Got checksum %s local=%s remote=%s\n", item.Src.String(), hash, item.Checksum)
-            if len(item.Checksum) <= 2 || hash != item.Checksum[1:len(item.Checksum)-1] {
-                copyFile(config, item.Src, item.Dst, true)
-            }
-        }
-    }
-
-    // If the destination is S3, then lets do batch removes
-    if dst_uri.Scheme == "s3" {
-        bsvc := SessionForBucket(SessionNew(config), dst_uri.Bucket)
-        objects := make([]*s3.ObjectIdentifier, 0)
-
-        // Helper to remove the actual objects
-        doDelete := func() error {
-            if len(objects) == 0 {
-                return nil
-            }
-            if !config.DryRun {
-                params := &s3.DeleteObjectsInput{
-                    Bucket: aws.String(dst_uri.Bucket), // Required
-                    Delete: &s3.Delete{ // Required
-                        Objects: objects,
-                    },
-                }
-
-                if _, err := bsvc.DeleteObjects(params); err != nil {
-                    return err
-                }
-
-            }
-            objects = make([]*s3.ObjectIdentifier, 0)
-            return nil
-        }
-
-        for _, item := range work_queue {
-            if item.Type != ACT_REMOVE {
-                continue
-            }
-            if config.Verbose {
-                fmt.Printf("Remove %s\n", item.Dst.String())
-            }
-            objects = append(objects, &s3.ObjectIdentifier{ Key: item.Dst.Key() })
-            if len(objects) == 500 {
-                if err := doDelete(); err != nil {
-                    return err
-                }
-            }
-        }
-        if err := doDelete(); err != nil {
-            return err
-        }
-    }
+    close(chanCopy)
+    close(chanChecksum)
+    close(chanRemove)
+    wg.Wait()
 
     return nil
 }
@@ -348,7 +298,10 @@ func buildFileInfo(config *Config, src *FileURI, dropPrefix int, addPrefix strin
     files := make(map[string]*FileObject, 0)
 
     if src.Scheme == "s3" {
-        slen := len(*src.Key())
+        slen := len(*src.Key()) -1
+        if (*src.Key())[slen] != '/' {
+            slen += 1
+        }
         objs, err := remoteList(config, nil, []string{src.String()})
         if err != nil {
             return files, err
@@ -356,6 +309,7 @@ func buildFileInfo(config *Config, src *FileURI, dropPrefix int, addPrefix strin
         // dropPrefix -= 1 // no leading '/'
         for idx, obj := range objs {
             if obj.Name[slen] != '/' {
+                // fmt.Printf("SKIP: %s %d %c %s\n", obj.Name, slen, obj.Name[slen], *src.Key())
                 continue
             }
             name := addPrefix + obj.Name[dropPrefix:]
@@ -471,4 +425,98 @@ func amazonEtagHash(path string) (string, error) {
         hash += fmt.Sprintf("-%d", count)
     }
     return hash, nil
+}
+
+//  GoRoutine workers -- copy from src to dst
+func workerCopy(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
+    for item := range jobs {
+        copyFile(config, item.Src, item.Dst, true)
+    }
+    wg.Done()
+}
+
+//  GoRoutine workers -- remove file
+func workerRemove(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
+    objects := make([]*s3.ObjectIdentifier, 0)
+
+    // Helper to remove the actual objects
+    doDelete := func(last *FileURI) error {
+        bsvc := SessionForBucket(SessionNew(config), last.Bucket)
+
+        params := &s3.DeleteObjectsInput{
+            Bucket: aws.String(last.Bucket), // Required
+            Delete: &s3.Delete{ // Required
+                Objects: objects,
+            },
+        }
+
+        if _, err := bsvc.DeleteObjects(params); err != nil {
+            return err
+        }
+
+        objects = make([]*s3.ObjectIdentifier, 0)
+        return nil
+    }
+
+    var last    *FileURI
+
+    for item := range jobs {
+        if config.Verbose {
+            fmt.Printf("Remove %s\n", item.Dst.String())
+        }
+        if config.DryRun {
+            continue
+        }
+        last = item.Dst
+
+        if item.Dst.Scheme == "file" {
+            if err := os.Remove(item.Dst.Path); err != nil {
+                // return err
+            }
+        } else {
+            objects = append(objects, &s3.ObjectIdentifier{ Key: item.Dst.Key() })
+            if len(objects) == 500 {
+                if err := doDelete(last); err != nil {
+                    // return err
+                }
+            }
+        }
+    }
+
+    if len(objects) != 0 {
+        if err := doDelete(last); err != nil {
+            // return err
+        }
+    }
+    wg.Done()
+}
+
+//  GoRoutine workers -- check checksum and copy if needed
+func workerChecksum(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
+    for item := range jobs {
+        var (
+            hash string
+            err error
+        )
+
+        if item.Dst.Scheme == "s3" {
+            hash, err = amazonEtagHash(item.Src.Path)
+            if err != nil {
+                // return fmt.Errorf("Unable to get checksum of local file %s", item.Src.String())
+                fmt.Printf("Unable to get checksum of local file %s\n", item.Src.String())
+            }
+        } else {
+            hash, err = amazonEtagHash(item.Dst.Path)
+            if err != nil {
+                // return fmt.Errorf("Unable to get checksum of local file %s", item.Dst.String())
+                fmt.Printf("Unable to get checksum of local file %s\n", item.Src.String())
+            }
+        }
+
+        // fmt.Printf("Got checksum %s local=%s remote=%s\n", item.Src.String(), hash, item.Checksum)
+        if len(item.Checksum) <= 2 || hash != item.Checksum[1:len(item.Checksum)-1] {
+            copyFile(config, item.Src, item.Dst, true)
+        }
+    }
+    wg.Done()
 }
