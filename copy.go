@@ -36,7 +36,10 @@ func copyFile(config *Config, src, dst *FileURI, ensure_directory bool) error {
 
 // Copy from S3 to local file
 func copyToLocal(config *Config, src, dst *FileURI, ensure_directory bool) error {
-    svc := SessionForBucket(SessionNew(config), src.Bucket)
+    svc, err := SessionForBucket(SessionNew(config), src.Bucket)
+    if err != nil {
+        return err
+    }
     downloader := s3manager.NewDownloaderWithClient(svc)
 
     params := &s3.GetObjectInput{
@@ -76,7 +79,11 @@ func copyToLocal(config *Config, src, dst *FileURI, ensure_directory bool) error
 
 // Copy from local file to S3
 func copyToS3(config *Config, src, dst *FileURI) error {
-    svc := SessionForBucket(SessionNew(config), dst.Bucket)
+    svc, err := SessionForBucket(SessionNew(config), dst.Bucket)
+    if err != nil {
+        return err
+    }
+
     uploader := s3manager.NewUploaderWithClient(svc)
 
     fd, err := os.Open(src.Path)
@@ -102,7 +109,10 @@ func copyToS3(config *Config, src, dst *FileURI) error {
 // Copy from S3 to S3
 //  -- if src and dst are the same it effects a "touch"
 func copyOnS3(config *Config, src, dst *FileURI) error {
-    svc := SessionForBucket(SessionNew(config), dst.Bucket)
+    svc, err := SessionForBucket(SessionNew(config), dst.Bucket)
+    if err != nil {
+        return err
+    }
 
     if strings.HasSuffix(src.Path, "/") {
         return fmt.Errorf("Invalid source for bucket to bucket copy path ends in '/'")
@@ -119,7 +129,7 @@ func copyOnS3(config *Config, src, dst *FileURI) error {
         params.MetadataDirective = aws.String("REPLACE")
     }
 
-    _, err := svc.CopyObject(params)
+    _, err = svc.CopyObject(params)
     if err != nil {
         return err
     }

@@ -26,7 +26,10 @@ func GetInfo(config *Config, c *cli.Context) error {
             continue
         }
 
-        bsvc := SessionForBucket(svc, u.Bucket)
+        bsvc, err := SessionForBucket(svc, u.Bucket)
+        if err != nil {
+            return err
+        }
 
         if u.Path == "" || u.Path == "/" {
             bucket := aws.String(u.Bucket)

@@ -32,7 +32,11 @@ func remotePager(config *Config, svc *s3.S3, uri string, delim bool, pager func(
         svc = SessionNew(config)
     }
 
-    if err := SessionForBucket(svc, u.Bucket).ListObjectsV2Pages(params, wrapper); err != nil {
+    bsvc, err := SessionForBucket(svc, u.Bucket)
+    if err != nil {
+        return err
+    }
+    if err := bsvc.ListObjectsV2Pages(params, wrapper); err != nil {
         return err
     }
     return nil

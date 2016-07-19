@@ -62,7 +62,11 @@ func copyCore(config *Config, src, dst *FileURI) error {
     if config.Recursive {
         if src.Scheme == "s3" {
             // Get the remote file list and start copying
-            svc := SessionForBucket(SessionNew(config), src.Bucket)
+            svc, err := SessionForBucket(SessionNew(config), src.Bucket)
+            if err != nil {
+                return err
+            }
+
             basePath := src.Path[1:]
 
             remotePager(config, svc, src.String(), false, func(page *s3.ListObjectsV2Output) {

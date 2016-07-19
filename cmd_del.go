@@ -36,7 +36,10 @@ func DeleteObjects(config *Config, c *cli.Context) error {
 
     // FIXME: Limited to 1000 objects, that's that shouldn't be an issue, but ...
     for bucket, objects := range buckets {
-        bsvc := SessionForBucket(svc, bucket)
+        bsvc, err := SessionForBucket(svc, bucket)
+        if err != nil {
+            return err
+        }
 
         if config.Recursive {
             for _, obj := range objects {

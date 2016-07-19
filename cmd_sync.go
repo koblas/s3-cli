@@ -106,7 +106,10 @@ func CmdSync(config *Config, c *cli.Context) error {
                 src_is_directory = info.IsDir()
             }
         } else {
-            bsvc := SessionForBucket(SessionNew(config), src.Bucket)
+            bsvc, err := SessionForBucket(SessionNew(config), src.Bucket)
+            if err != nil {
+                return err
+            }
             params := &s3.HeadObjectInput {
                 Bucket: aws.String(src.Bucket),
                 Key:    src.Key(),
@@ -361,7 +364,11 @@ func getFileInfo(config *Config, srcs []*FileURI) map[FileURI]*FileObject {
                 Size: info.Size(),
             }
         } else {
-            bsvc := SessionForBucket(SessionNew(config), src.Bucket)
+            bsvc, err := SessionForBucket(SessionNew(config), src.Bucket)
+            if err != nil {
+                continue
+            }
+
             params := &s3.HeadObjectInput {
                 Bucket: aws.String(src.Bucket),
                 Key:    src.Key(),
@@ -444,7 +451,10 @@ func workerRemove(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
 
     // Helper to remove the actual objects
     doDelete := func(last *FileURI) error {
-        bsvc := SessionForBucket(SessionNew(config), last.Bucket)
+        bsvc, err := SessionForBucket(SessionNew(config), last.Bucket)
+        if err != nil {
+            return err
+        }
 
         params := &s3.DeleteObjectsInput{
             Bucket: aws.String(last.Bucket), // Required
