@@ -35,6 +35,9 @@ You can also point it to another config file with e.g. `$ s3-cli --config /path/
 
 ## Documentation
 
+In general the commands follow `rsync` as a guide for command options or the unix command line 
+commands.
+
 ### cp
 
 Copy files to and from S3

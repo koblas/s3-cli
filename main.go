@@ -21,6 +21,11 @@ func main() {
 	// cliapp.Usage = ""
 	cliapp.Version = "0.1.0"
 
+    cli.VersionFlag = cli.BoolFlag{
+        Name: "version, V",
+        Usage: "print version number",
+    }
+
 	cliapp.Flags = []cli.Flag{
 		cli.StringSliceFlag{
 			Name:  "config, c",
@@ -52,7 +57,7 @@ func main() {
 		},
 
 		cli.BoolFlag{
-			Name:  "verbose",
+			Name:  "verbose,v",
 			Usage: "Verbose output (e.g. debugging)",
 		},
 		cli.BoolFlag{
