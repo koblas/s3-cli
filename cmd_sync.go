@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+	"math"
 	"sync"
 	"io"
 	"os"
@@ -19,6 +21,7 @@ type Action struct {
     Type            int
     Src             *FileURI
     Dst             *FileURI
+    Size            int64
     Checksum        string
 }
 
@@ -141,30 +144,36 @@ func CmdSync(config *Config, c *cli.Context) error {
         wg sync.WaitGroup
     )
 
-    chanCopy := make(chan Action, 10)
-    chanChecksum := make(chan Action, 10)
-    chanRemove := make(chan Action, 10)
+    chanCopy := make(chan Action, 1000)
+    chanChecksum := make(chan Action, 1000)
+    chanRemove := make(chan Action, 1000)
+    chanProgress := make(chan int64)
+
+    go workerProgress(chanProgress)
 
     wg.Add(1)
-    go workerRemove(config, &wg, chanRemove)
+    go workerRemove(config, &wg, chanRemove, chanProgress)
 
     wg.Add(NUM_CHECKSUM)
     for i := 0; i < NUM_CHECKSUM; i++ {
-        go workerChecksum(config, &wg, chanChecksum)
+        go workerChecksum(config, &wg, chanChecksum, chanProgress)
     }
 
     wg.Add(NUM_COPY)
     for i := 0; i < NUM_COPY; i++ {
-        go workerCopy(config, &wg, chanCopy)
+        go workerCopy(config, &wg, chanCopy, chanProgress)
     }
 
     addWork := func (src *FileURI, src_info *FileObject, dst *FileURI, dst_info *FileObject) {
+        /*
         if src == nil {
             fmt.Println("NIL", " -> ", dst.String())
         } else {
             fmt.Println(src.String(), " -> ", dst.String())
         }
+        */
         file_count += 1
+
         if src_info == nil {
             chanRemove <- Action{
                 Type: ACT_REMOVE,
@@ -176,23 +185,29 @@ func CmdSync(config *Config, c *cli.Context) error {
                 Type: ACT_COPY,
                 Src: src,
                 Dst: dst,
+                Size: src_info.Size,
             }
             estimated_bytes += src_info.Size
+            chanProgress <- src_info.Size
         } else if src_info.Size != dst_info.Size {
             chanCopy <- Action{
                 Type: ACT_COPY,
                 Src: src,
                 Dst: dst,
+                Size: src_info.Size,
             }
             estimated_bytes += src_info.Size
+            chanProgress <- src_info.Size
         } else if config.CheckMD5 {
             if src_info.Checksum != "" && dst_info.Checksum != "" && src_info.Checksum != dst_info.Checksum {
                 chanCopy <- Action{
                     Type: ACT_COPY,
                     Src: src,
                     Dst: dst,
+                    Size: src_info.Size,
                 }
                 estimated_bytes += src_info.Size
+                chanProgress <- src_info.Size
             } else {
                 check := src_info.Checksum
                 if check == "" {
@@ -203,6 +218,7 @@ func CmdSync(config *Config, c *cli.Context) error {
                     Src: src,
                     Dst: dst,
                     Checksum: check,
+                    Size: src_info.Size,
                 }
                 estimated_bytes += src_info.Size
             }
@@ -291,6 +307,10 @@ func CmdSync(config *Config, c *cli.Context) error {
     close(chanChecksum)
     close(chanRemove)
     wg.Wait()
+
+    chanProgress <- 0
+    close(chanProgress)
+    os.Stdout.Write([]byte{'\n'})
 
     return nil
 }
@@ -438,15 +458,16 @@ func amazonEtagHash(path string) (string, error) {
 }
 
 //  GoRoutine workers -- copy from src to dst
-func workerCopy(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
+func workerCopy(config *Config, wg *sync.WaitGroup, jobs <-chan Action, progress chan int64) {
     for item := range jobs {
         copyFile(config, item.Src, item.Dst, true)
+        progress <- -item.Size
     }
     wg.Done()
 }
 
 //  GoRoutine workers -- remove file
-func workerRemove(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
+func workerRemove(config *Config, wg *sync.WaitGroup, jobs <-chan Action, progress chan int64) {
     objects := make([]*s3.ObjectIdentifier, 0)
 
     // Helper to remove the actual objects
@@ -505,7 +526,7 @@ func workerRemove(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
 }
 
 //  GoRoutine workers -- check checksum and copy if needed
-func workerChecksum(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
+func workerChecksum(config *Config, wg *sync.WaitGroup, jobs <-chan Action, progress chan int64) {
     for item := range jobs {
         var (
             hash string
@@ -528,8 +549,76 @@ func workerChecksum(config *Config, wg *sync.WaitGroup, jobs <-chan Action) {
 
         // fmt.Printf("Got checksum %s local=%s remote=%s\n", item.Src.String(), hash, item.Checksum)
         if len(item.Checksum) <= 2 || hash != item.Checksum[1:len(item.Checksum)-1] {
+            progress <- item.Size
             copyFile(config, item.Src, item.Dst, true)
+            progress <- -item.Size
         }
     }
     wg.Done()
+}
+
+//  output the progress to the user
+func humanize(value int64) string {
+    const base = 1024.0
+    sizes := []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
+
+    logn := func(n, b float64) float64 {
+        return math.Log(n) / math.Log(b)
+    }
+
+    if value < 10 {
+        return fmt.Sprintf("%d %s", value, sizes[0])
+    }
+    e := math.Floor(logn(float64(value), base))
+    val := math.Floor(float64(value) / math.Pow(base, e) * 10 + 0.5) / 10
+    f := "%.0f %s"
+    if val < 10 {
+        f = "%.1f %s"
+    }
+    return fmt.Sprintf(f, val, sizes[int(e)])
+}
+
+func workerProgress(updates <-chan int64) {
+    tstart := time.Now()
+    var (
+        lastStr string
+        totalBytes, sentBytes int64
+    )
+
+    for update := range updates {
+        if update > 0 {
+            totalBytes += update
+        } else {
+            sentBytes += -update
+        }
+
+        if totalBytes == 0 {
+            continue
+        }
+
+        str := fmt.Sprintf("%s / %s (%2.1f%%)   %s/sec", 
+                        humanize(sentBytes), humanize(totalBytes), 
+                        100.0 * float64(sentBytes) / float64(totalBytes),
+                        humanize(int64(float64(sentBytes) / time.Since(tstart).Seconds())))
+
+        if str == lastStr {
+            continue
+        }
+
+        for i := 0; i < len(lastStr); i++ {
+            os.Stdout.Write([]byte{'\010'})
+        }
+
+        os.Stdout.Write([]byte(str))
+        for i := len(str); i < len(lastStr); i++ {
+            os.Stdout.Write([]byte{' '})
+        }
+        for i := len(str); i < len(lastStr); i++ {
+            os.Stdout.Write([]byte{'\010'})
+        }
+        lastStr = str
+
+        os.Stdout.Sync()
+        // fmt.Println(str)
+    }
 }
