@@ -52,6 +52,9 @@ func CmdSync(config *Config, c *cli.Context) error {
     )
 
 	args := c.Args()
+    if len(args) < 2 {
+        return fmt.Errorf("Not enough arguments")
+    }
 
     dst, args := args[len(args)-1], args[:len(args)-1]
 
@@ -298,8 +301,8 @@ func buildFileInfo(config *Config, src *FileURI, dropPrefix int, addPrefix strin
     files := make(map[string]*FileObject, 0)
 
     if src.Scheme == "s3" {
-        slen := len(*src.Key()) -1
-        if (*src.Key())[slen] != '/' {
+        slen := len(*src.Key()) - 1
+        if slen > 0 && (*src.Key())[slen] != '/' {
             slen += 1
         }
         objs, err := remoteList(config, nil, []string{src.String()})
@@ -308,7 +311,7 @@ func buildFileInfo(config *Config, src *FileURI, dropPrefix int, addPrefix strin
         }
         // dropPrefix -= 1 // no leading '/'
         for idx, obj := range objs {
-            if obj.Name[slen] != '/' {
+            if slen > 0 && len(obj.Name) > slen && obj.Name[slen] != '/' {
                 // fmt.Printf("SKIP: %s %d %c %s\n", obj.Name, slen, obj.Name[slen], *src.Key())
                 continue
             }
