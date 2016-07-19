@@ -87,7 +87,10 @@ func parseOptions(config *Config, c *cli.Context) {
         gset := c.GlobalIsSet(name)
         lset := c.IsSet(name)
 
-        if !gset && !lset {
+        // fmt.Println(name, gset, lset, c.String(name))
+
+        // FIXME: This isn't great, "IsSet()" isn't triggered for environment variables
+        if !gset && !lset && c.String(name) == "" {
             continue
         }
 

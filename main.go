@@ -33,14 +33,14 @@ func main() {
 			Usage: "Config `FILE` name.",
 		},
 		cli.StringFlag{
-			Name:  "access_key",
+			Name:  "access-key",
 			Usage: "AWS Access Key `ACCESS_KEY`",
-            EnvVar: "AWS_ACCESS_KEY_ID",
+            EnvVar: "AWS_ACCESS_KEY_ID,AWS_ACCESS_KEY",
 		},
 		cli.StringFlag{
-			Name:  "secret_key",
+			Name:  "secret-key",
 			Usage: "AWS Secret Key `SECRET_KEY`",
-            EnvVar: "AWS_SECRET_ACCESS_KEY",
+            EnvVar: "AWS_SECRET_ACCESS_KEY,AWS_SECRET_KEY",
 		},
 
 		cli.BoolFlag{
