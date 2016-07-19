@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-DEFAULT_REGION = "us-east-1"
+const DEFAULT_REGION = "us-east-1"
 
 func SessionNew(config *Config) *s3.S3 {
     creds := credentials.NewStaticCredentials(config.AccessKey, config.SecretKey, "")
