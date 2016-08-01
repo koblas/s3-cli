@@ -58,7 +58,13 @@ func copyToLocal(config *Config, src, dst *FileURI, ensure_directory bool) error
     if ensure_directory {
         dir := filepath.Dir(dst.Path)
         if _, err := os.Stat(dir); err != nil {
-            os.MkdirAll(dir, 0755)
+            if config.Verbose {
+                fmt.Printf("Making directory dir=%s\n", dir)
+            }
+            if err := os.MkdirAll(dir, 0755); err != nil {
+                fmt.Println(err)
+                return fmt.Errorf("Error making directory dir=%s error=%v", dir, err)
+            }
         }
     }
 

@@ -66,11 +66,11 @@ func main() {
 		},
 		cli.BoolFlag{
 			Name:  "check-md5",
-			Usage: "Check MD5 sums when comparing files for [sync].  (default)",
+			Usage: "Check MD5 sums when comparing files for [sync]. (not default)",
 		},
 		cli.BoolFlag{
 			Name:  "no-check-md5",
-			Usage: "Do not check MD5 sums when comparing files for [sync].  Only size will be compared. May significantly speed up transfer but may also miss some changed files.",
+			Usage: "Do not check MD5 sums when comparing files for [sync] (default).",
 		},
 	}
 

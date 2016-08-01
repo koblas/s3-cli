@@ -58,7 +58,7 @@ func NewConfig(c *cli.Context) *Config {
 
 // Load the config file if possible, but if there is an error return the default configuration file
 func loadConfigFile(path string) *Config {
-	config := Config{CheckMD5: true}
+	config := Config{CheckMD5: false}
 
 	// fmt.Println("Read config ", path)
 
