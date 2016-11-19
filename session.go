@@ -17,11 +17,13 @@ func SessionNew(config *Config) *s3.S3 {
 }
 
 func SessionForBucket(svc *s3.S3, bucket string) (*s3.S3, error) {
+    /*
     params := &s3.HeadBucketInput{ Bucket: aws.String(bucket) }
     _, err := svc.HeadBucket(params)
     if err != nil {
         return nil, err
     }
+    */
 
     if loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: &bucket}); err != nil {
         return nil, err
