@@ -28,6 +28,7 @@ type Action struct {
 const (
     NUM_COPY = 4
     NUM_CHECKSUM = 1
+    QUEUE_SIZE = 1000000    // 1M
 )
 
 // One command to sync files/directories -- it's always recursive when directories are present
@@ -144,9 +145,9 @@ func CmdSync(config *Config, c *cli.Context) error {
         wg sync.WaitGroup
     )
 
-    chanCopy := make(chan Action, 1000)
-    chanChecksum := make(chan Action, 1000)
-    chanRemove := make(chan Action, 1000)
+    chanCopy := make(chan Action, QUEUE_SIZE)
+    chanChecksum := make(chan Action, QUEUE_SIZE)
+    chanRemove := make(chan Action, QUEUE_SIZE)
     chanProgress := make(chan int64)
 
     go workerProgress(chanProgress)
