@@ -461,7 +461,11 @@ func amazonEtagHash(path string) (string, error) {
 //  GoRoutine workers -- copy from src to dst
 func workerCopy(config *Config, wg *sync.WaitGroup, jobs <-chan Action, progress chan int64) {
 	for item := range jobs {
-		copyFile(config, item.Src, item.Dst, true)
+		err := copyFile(config, item.Src, item.Dst, true)
+		if (err != nil) {
+			fmt.Printf("\nUnable to copy: %v\n", err);
+			os.Exit(1);
+		}
 		progress <- -item.Size
 	}
 	wg.Done()
@@ -620,6 +624,5 @@ func workerProgress(updates <-chan int64) {
 		lastStr = str
 
 		os.Stdout.Sync()
-		// fmt.Println(str)
 	}
 }
