@@ -67,12 +67,21 @@ func copyCore(config *Config, src, dst *FileURI) error {
                 return err
             }
 
-            basePath := src.Path[1:]
+            // For recusive we should assume that the src path ends in '/' since it's a directory
+            nsrc := src;
+            if (!strings.HasSuffix(src.Path, "/")) {
+                nsrc = src.SetPath(src.Path + "/");
+            }
 
-            remotePager(config, svc, src.String(), false, func(page *s3.ListObjectsV2Output) {
+            basePath := nsrc.Path
+
+            remotePager(config, svc, nsrc.String(), false, func(page *s3.ListObjectsV2Output) {
                 for _, obj := range page.Contents {
                     src_path := *obj.Key
+                    fmt.Printf("src_path=%s  basePath=%s\n", src_path, basePath);
                     src_path = src_path[len(basePath):]
+
+                    fmt.Printf("new src_path = %s\n", src_path);
 
                     // uri := fmt.Sprintf("/%s", src.Host, *obj.Key)
                     dst_path := dst.String()
