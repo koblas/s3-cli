@@ -22,3 +22,11 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# Testing files
+tdata/*
+TXT
+s3-cli
+s3cmd-info
+empty.txt
+.env
