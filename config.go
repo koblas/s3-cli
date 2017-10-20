@@ -58,15 +58,15 @@ func NewConfig(c *cli.Context) *Config {
 
 // Load the config file if possible, but if there is an error return the default configuration file
 func loadConfigFile(path string) *Config {
-	config := Config{CheckMD5: false}
+	config := &Config{CheckMD5: false}
 
 	// fmt.Println("Read config ", path)
 
 	if err := ini.MapTo(config, path); err != nil {
-		return &config
+		return config
 	}
 
-	return &config
+	return config
 }
 
 // Pull the options out of the cli.Context and save them into the configuration object
