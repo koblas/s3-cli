@@ -1,0 +1,22 @@
+# .goreleaser.yml
+# Build customization
+builds:
+  - binary: dbview 
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - 386
+      - amd64
+
+# Archive customization
+archive:
+  format: tgz
+  replacements:
+    386: 32-bit
+    amd64: 64-bit
+
+    darwin: macOS
+  files:
+    - config.toml
