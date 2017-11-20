@@ -1,7 +1,7 @@
 # .goreleaser.yml
 # Build customization
 builds:
-  - binary: dbview 
+  - binary: s3-cli 
     goos:
       - windows
       - darwin
@@ -18,5 +18,3 @@ archive:
     amd64: 64-bit
 
     darwin: macOS
-  files:
-    - config.toml
