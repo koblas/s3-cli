@@ -62,7 +62,12 @@ func loadConfigFile(path string) *Config {
 
 	// fmt.Println("Read config ", path)
 
-	if err := ini.MapTo(config, path); err != nil {
+	cfg, err := ini.Load(path)
+	if err != nil {
+		return config
+	}
+
+	if err := cfg.Section("default").MapTo(config); err != nil {
 		return config
 	}
 
