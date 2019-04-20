@@ -1,8 +1,11 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
@@ -10,25 +13,69 @@ import (
 // DefaultRegion to use for S3 credential creation
 const defaultRegion = "us-east-1"
 
-// SessionNew - Read the config for default credentials, if not provided use environment based variables
-func SessionNew(config *Config) *s3.S3 {
+func buildSessionConfig(config *Config) aws.Config {
 	// By default make sure a region is specified, this is required for S3 operations
-	var sessionConfig = &aws.Config{Region: aws.String(defaultRegion)}
+	sessionConfig := aws.Config{Region: aws.String(defaultRegion)}
 
 	if config.AccessKey != "" && config.SecretKey != "" {
 		sessionConfig.Credentials = credentials.NewStaticCredentials(config.AccessKey, config.SecretKey, "")
 	}
 
-	return s3.New(session.Must(session.NewSession(sessionConfig)))
+	return sessionConfig
+}
+
+func buildEndpointResolver(hostname string) endpoints.Resolver{
+	defaultResolver := endpoints.DefaultResolver()
+
+	return endpoints.ResolverFunc(func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+		if service == endpoints.S3ServiceID {
+			return endpoints.ResolvedEndpoint{
+				URL:           hostname,
+			}, nil
+		}
+
+		return defaultResolver.EndpointFor(service, region, optFns...)
+	})
+}
+
+// SessionNew - Read the config for default credentials, if not provided use environment based variables
+func SessionNew(config *Config) *s3.S3 {
+	sessionConfig := buildSessionConfig(config)
+
+	if config.HostBase != "" && config.HostBase != "s3.amazon.com" {
+		sessionConfig.EndpointResolver = buildEndpointResolver(config.HostBase)
+	}
+
+	return s3.New(session.Must(session.NewSessionWithOptions(session.Options{
+		Config:            sessionConfig,
+		SharedConfigState: session.SharedConfigEnable,
+	})))
 }
 
 // SessionForBucket - For a given S3 bucket, create an approprate session that references the region
 // that this bucket is located in
-func SessionForBucket(svc *s3.S3, bucket string) (*s3.S3, error) {
-	if loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: &bucket}); err != nil {
-		return nil, err
-	} else if loc.LocationConstraint != nil {
-		return s3.New(session.Must(session.NewSession(&svc.Client.Config, &aws.Config{Region: loc.LocationConstraint}))), nil
+func SessionForBucket(config *Config, bucket string) (*s3.S3, error) {
+	sessionConfig := buildSessionConfig(config)
+
+	if config.HostBucket == "" || config.HostBucket == "%(bucket)s.s3.amazonaws.com" {
+		svc := SessionNew(config)
+
+		if loc, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: &bucket}); err != nil {
+			return nil, err
+		} else if loc.LocationConstraint == nil {
+			// Use default service
+			return svc, nil
+		} else {
+			sessionConfig.Region = loc.LocationConstraint
+		}
+	} else {
+		host := strings.ReplaceAll(config.HostBucket, "%(bucket)s", bucket)
+
+		sessionConfig.EndpointResolver = buildEndpointResolver(host)
 	}
-	return svc, nil
+
+	return s3.New(session.Must(session.NewSessionWithOptions(session.Options{
+		Config:            sessionConfig,
+		SharedConfigState: session.SharedConfigEnable,
+	}))), nil
 }

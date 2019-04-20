@@ -62,7 +62,7 @@ func copyCore(config *Config, src, dst *FileURI) error {
     if config.Recursive {
         if src.Scheme == "s3" {
             // Get the remote file list and start copying
-            svc, err := SessionForBucket(SessionNew(config), src.Bucket)
+            svc, err := SessionForBucket(config, src.Bucket)
             if err != nil {
                 return err
             }

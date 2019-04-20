@@ -110,7 +110,7 @@ func CmdSync(config *Config, c *cli.Context) error {
 				src_is_directory = info.IsDir()
 			}
 		} else {
-			bsvc, err := SessionForBucket(SessionNew(config), src.Bucket)
+			bsvc, err := SessionForBucket(config, src.Bucket)
 			if err != nil {
 				return err
 			}
@@ -385,7 +385,7 @@ func getFileInfo(config *Config, srcs []*FileURI) map[FileURI]*FileObject {
 				Size: info.Size(),
 			}
 		} else {
-			bsvc, err := SessionForBucket(SessionNew(config), src.Bucket)
+			bsvc, err := SessionForBucket(config, src.Bucket)
 			if err != nil {
 				continue
 			}
@@ -477,7 +477,7 @@ func workerRemove(config *Config, wg *sync.WaitGroup, jobs <-chan Action, progre
 
 	// Helper to remove the actual objects
 	doDelete := func(last *FileURI) error {
-		bsvc, err := SessionForBucket(SessionNew(config), last.Bucket)
+		bsvc, err := SessionForBucket(config, last.Bucket)
 		if err != nil {
 			return err
 		}

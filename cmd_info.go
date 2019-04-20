@@ -11,8 +11,6 @@ import (
 func GetInfo(config *Config, c *cli.Context) error {
 	args := c.Args()
 
-    svc := SessionNew(config)
-
     // If we're not passed any args, we're going to do all S3 buckets
     if len(args) == 0 {
         return fmt.Errorf("Not enough parameters for command 'info'")
@@ -26,7 +24,7 @@ func GetInfo(config *Config, c *cli.Context) error {
             continue
         }
 
-        bsvc, err := SessionForBucket(svc, u.Bucket)
+        bsvc, err := SessionForBucket(config, u.Bucket)
         if err != nil {
             return err
         }

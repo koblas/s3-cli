@@ -1,12 +1,13 @@
 package main
 
 import (
-    // "fmt"
-    "strings"
-    "reflect"
+	// "fmt"
+	"path"
+	"reflect"
+	"strings"
+
 	"github.com/go-ini/ini"
 	"github.com/urfave/cli"
-	"path"
 )
 
 // This is the global configuration, it's loaded from .s3cfg (by default) then with added
@@ -18,12 +19,15 @@ type Config struct {
 	AccessKey string `ini:"access_key"`
 	SecretKey string `ini:"secret_key"`
 
-    CheckMD5  bool  `ini:"check_md5" cli:"check-md5"`
-    DryRun      bool  `ini:"dry_run"`
-    Verbose     bool  `ini:"verbose"`
-    Recursive     bool  `ini:"recursive"`
-    Force     bool  `ini:"force"`
-    SkipExisting     bool  `ini:"skip_existing"`
+	CheckMD5     bool `ini:"check_md5" cli:"check-md5"`
+	DryRun       bool `ini:"dry_run"`
+	Verbose      bool `ini:"verbose"`
+	Recursive    bool `ini:"recursive"`
+	Force        bool `ini:"force"`
+	SkipExisting bool `ini:"skip_existing"`
+
+	HostBase   string `ini:"host_base"`
+	HostBucket string `ini:"host_bucket"`
 }
 
 // Read the configuration file if found, otherwise return default configuration
@@ -47,11 +51,11 @@ func NewConfig(c *cli.Context) *Config {
 
 	config := loadConfigFile(cfgPath)
 
-    parseOptions(config, c)
+	parseOptions(config, c)
 
-    if c.GlobalIsSet("no-check-md5") || c.IsSet("no-check-md5") {
-        config.CheckMD5 = false
-    }
+	if c.GlobalIsSet("no-check-md5") || c.IsSet("no-check-md5") {
+		config.CheckMD5 = false
+	}
 
 	return config
 }
@@ -76,54 +80,54 @@ func loadConfigFile(path string) *Config {
 
 // Pull the options out of the cli.Context and save them into the configuration object
 func parseOptions(config *Config, c *cli.Context) {
-    rt := reflect.TypeOf(*config)
-    rv := reflect.ValueOf(config)
+	rt := reflect.TypeOf(*config)
+	rv := reflect.ValueOf(config)
 
-    for i := 0; i < rt.NumField(); i++ {
-        field := rt.Field(i)
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
 
-        name := ""
-        if field.Tag.Get("cli") != "" {
-            name = field.Tag.Get("cli")
-        } else {
-            name = strings.Replace(CamelToSnake(field.Name), "_", "-", -1)
-        }
+		name := ""
+		if field.Tag.Get("cli") != "" {
+			name = field.Tag.Get("cli")
+		} else {
+			name = strings.Replace(CamelToSnake(field.Name), "_", "-", -1)
+		}
 
-        gset := c.GlobalIsSet(name)
-        lset := c.IsSet(name)
+		gset := c.GlobalIsSet(name)
+		lset := c.IsSet(name)
 
-        // fmt.Println(name, gset, lset, c.String(name))
+		// fmt.Println(name, gset, lset, c.String(name))
 
-        // FIXME: This isn't great, "IsSet()" isn't triggered for environment variables
-        if !gset && !lset && c.String(name) == "" {
-            continue
-        }
+		// FIXME: This isn't great, "IsSet()" isn't triggered for environment variables
+		if !gset && !lset && c.String(name) == "" {
+			continue
+		}
 
-        f := rv.Elem().FieldByName(field.Name)
+		f := rv.Elem().FieldByName(field.Name)
 
-        if !f.IsValid() || !f.CanSet() {
-            continue
-        }
+		if !f.IsValid() || !f.CanSet() {
+			continue
+		}
 
-        switch f.Kind() {
-        case reflect.Bool:
-            if lset {
-                f.SetBool(c.Bool(name))
-            } else {
-                f.SetBool(c.GlobalBool(name))
-            }
-        case reflect.String:
-            if lset {
-                f.SetString(c.String(name))
-            } else {
-                f.SetString(c.GlobalString(name))
-            }
-        case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
-            if lset {
-                f.SetInt(c.Int64(name))
-            } else {
-                f.SetInt(c.GlobalInt64(name))
-            }
-        }
-    }
+		switch f.Kind() {
+		case reflect.Bool:
+			if lset {
+				f.SetBool(c.Bool(name))
+			} else {
+				f.SetBool(c.GlobalBool(name))
+			}
+		case reflect.String:
+			if lset {
+				f.SetString(c.String(name))
+			} else {
+				f.SetString(c.GlobalString(name))
+			}
+		case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
+			if lset {
+				f.SetInt(c.Int64(name))
+			} else {
+				f.SetInt(c.GlobalInt64(name))
+			}
+		}
+	}
 }

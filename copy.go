@@ -36,7 +36,7 @@ func copyFile(config *Config, src, dst *FileURI, ensure_directory bool) error {
 
 // Copy from S3 to local file
 func copyToLocal(config *Config, src, dst *FileURI, ensure_directory bool) error {
-    svc, err := SessionForBucket(SessionNew(config), src.Bucket)
+    svc, err := SessionForBucket(config, src.Bucket)
     if err != nil {
         return err
     }
@@ -85,7 +85,7 @@ func copyToLocal(config *Config, src, dst *FileURI, ensure_directory bool) error
 
 // Copy from local file to S3
 func copyToS3(config *Config, src, dst *FileURI) error {
-    svc, err := SessionForBucket(SessionNew(config), dst.Bucket)
+    svc, err := SessionForBucket(config, dst.Bucket)
     if err != nil {
         return err
     }
@@ -115,7 +115,7 @@ func copyToS3(config *Config, src, dst *FileURI) error {
 // Copy from S3 to S3
 //  -- if src and dst are the same it effects a "touch"
 func copyOnS3(config *Config, src, dst *FileURI) error {
-    svc, err := SessionForBucket(SessionNew(config), dst.Bucket)
+    svc, err := SessionForBucket(config, dst.Bucket)
     if err != nil {
         return err
     }

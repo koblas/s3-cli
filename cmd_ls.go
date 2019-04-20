@@ -34,7 +34,7 @@ func listBucket(config *Config, svc *s3.S3, args []string) error {
             return fmt.Errorf("ls requires buckets to be prefixed with s3://")
         }
 
-        _, err = SessionForBucket(svc, u.Bucket)
+        _, err = SessionForBucket(config, u.Bucket)
         if err != nil {
             return err
         }
