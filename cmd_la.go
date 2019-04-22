@@ -8,24 +8,24 @@ import (
 
 func ListAll(config *Config, c *cli.Context) error {
 	args := c.Args()
-    if len(args) != 0 {
-        return fmt.Errorf("la shouldn't have arguments")
-    }
+	if len(args) != 0 {
+		return fmt.Errorf("la shouldn't have arguments")
+	}
 
 	svc := SessionNew(config)
 
-    var params *s3.ListBucketsInput
-    resp, err := svc.ListBuckets(params)
-    if err != nil {
-        return err
-    }
+	var params *s3.ListBucketsInput
+	resp, err := svc.ListBuckets(params)
+	if err != nil {
+		return err
+	}
 
-    for _, bucket := range resp.Buckets {
-        uri := fmt.Sprintf("s3://%s", *bucket.Name)
+	for _, bucket := range resp.Buckets {
+		uri := fmt.Sprintf("s3://%s", *bucket.Name)
 
-        // Shared with "ls"
-        listBucket(config, svc, []string{uri})
-    }
+		// Shared with "ls"
+		listBucket(config, svc, []string{uri})
+	}
 
 	return nil
 }
