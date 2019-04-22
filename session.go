@@ -24,13 +24,18 @@ func buildSessionConfig(config *Config) aws.Config {
 	return sessionConfig
 }
 
-func buildEndpointResolver(hostname string) endpoints.Resolver{
+func buildEndpointResolver(hostname string) endpoints.Resolver {
 	defaultResolver := endpoints.DefaultResolver()
+
+	fixedHost := hostname
+	if !strings.HasPrefix(hostname, "http") {
+		fixedHost = "https://" + hostname
+	}
 
 	return endpoints.ResolverFunc(func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
 		if service == endpoints.S3ServiceID {
 			return endpoints.ResolvedEndpoint{
-				URL:           hostname,
+				URL: fixedHost,
 			}, nil
 		}
 

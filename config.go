@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+	"fmt"
 	"path"
 	"reflect"
 	"strings"
@@ -37,16 +38,16 @@ type Config struct {
 //   - Config File
 //   - Default Values
 func NewConfig(c *cli.Context) *Config {
-	cfgPath := "/.s3cfg"
+	var cfgPath string
 
-	if c.GlobalIsSet("config") {
-		cfgPath = c.GlobalString("config")
-	} else if c.IsSet("config") {
-		cfgPath = c.String("config")
+	if obj := c.GlobalStringSlice("config"); len(obj) > 1 {
+		cfgPath = obj[1]
+	} else if obj := c.StringSlice("config"); len(obj) > 1 {
+		cfgPath = obj[1]
+	} else if value := GetEnv("HOME"); value != nil {
+		cfgPath = path.Join(*value, ".s3cfg")
 	} else {
-		if value := GetEnv("HOME"); value != nil {
-			cfgPath = path.Join(*value, ".s3cfg")
-		}
+		cfgPath = ".s3cfg"
 	}
 
 	config := loadConfigFile(cfgPath)
@@ -64,12 +65,20 @@ func NewConfig(c *cli.Context) *Config {
 func loadConfigFile(path string) *Config {
 	config := &Config{CheckMD5: false}
 
-	// fmt.Println("Read config ", path)
+	fmt.Println("Read config ", path)
 
 	cfg, err := ini.Load(path)
 	if err != nil {
 		return config
 	}
+
+	// s3cmd ini files are not Python configfiles --
+	//
+	// The INI file parser will use the %(bucket) and do a
+	// lookup on the key, if not found it will panic
+	// this puts a key in that causes the recursive lookup to limit
+	// out but allows things to work.
+	cfg.Section("").NewKey("bucket", "%(bucket)s")
 
 	if err := cfg.Section("default").MapTo(config); err != nil {
 		return config
