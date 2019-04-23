@@ -462,9 +462,9 @@ func amazonEtagHash(path string) (string, error) {
 func workerCopy(config *Config, wg *sync.WaitGroup, jobs <-chan Action, progress chan int64) {
 	for item := range jobs {
 		err := copyFile(config, item.Src, item.Dst, true)
-		if (err != nil) {
-			fmt.Printf("\nUnable to copy: %v\n", err);
-			os.Exit(1);
+		if err != nil {
+			fmt.Printf("\nUnable to copy: %v\n", err)
+			os.Exit(1)
 		}
 		progress <- -item.Size
 	}

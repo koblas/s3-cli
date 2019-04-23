@@ -16,7 +16,7 @@ func MakeBucket(config *Config, c *cli.Context) error {
 	if err != nil || u.Scheme != "s3" {
 		return fmt.Errorf("ls requires buckets to be prefixed with s3://")
 	}
-    if u.Path != "" {
+	if u.Path != "" {
 		return fmt.Errorf("Parameter problem: Expecting S3 URI with just the bucket name set instead of '%s'", args[0])
 	}
 

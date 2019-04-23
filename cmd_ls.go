@@ -24,45 +24,45 @@ func ListBucket(config *Config, c *cli.Context) error {
 		return nil
 	}
 
-    return listBucket(config, svc, args)
+	return listBucket(config, svc, args)
 }
 
 func listBucket(config *Config, svc *s3.S3, args []string) error {
-    for _, arg := range args {
-        u, err := FileURINew(arg)
-        if err != nil || u.Scheme != "s3" {
-            return fmt.Errorf("ls requires buckets to be prefixed with s3://")
-        }
+	for _, arg := range args {
+		u, err := FileURINew(arg)
+		if err != nil || u.Scheme != "s3" {
+			return fmt.Errorf("ls requires buckets to be prefixed with s3://")
+		}
 
-        _, err = SessionForBucket(config, u.Bucket)
-        if err != nil {
-            return err
-        }
+		_, err = SessionForBucket(config, u.Bucket)
+		if err != nil {
+			return err
+		}
 
-        todo := []string{arg}
+		todo := []string{arg}
 
-        for len(todo) != 0 {
-            var item string
-            item, todo = todo[0], todo[1:]
+		for len(todo) != 0 {
+			var item string
+			item, todo = todo[0], todo[1:]
 
-            remotePager(config, svc, item, !config.Recursive, func(page *s3.ListObjectsV2Output) {
-                for _, item := range page.CommonPrefixes {
-                    uri := fmt.Sprintf("s3://%s/%s", u.Bucket, *item.Prefix)
+			remotePager(config, svc, item, !config.Recursive, func(page *s3.ListObjectsV2Output) {
+				for _, item := range page.CommonPrefixes {
+					uri := fmt.Sprintf("s3://%s/%s", u.Bucket, *item.Prefix)
 
-                    if config.Recursive {
-                        todo = append(todo, uri)
-                    } else {
-                        fmt.Printf("%16s %9s   %s\n", "", "DIR", uri)
-                    }
-                }
-                if page.Contents != nil {
-                    for _, item := range page.Contents {
-                        fmt.Printf("%16s %9d   s3://%s/%s\n", item.LastModified.Format(DATE_FMT), *item.Size, u.Bucket, *item.Key)
-                    }
-                }
-            })
-        }
-    }
+					if config.Recursive {
+						todo = append(todo, uri)
+					} else {
+						fmt.Printf("%16s %9s   %s\n", "", "DIR", uri)
+					}
+				}
+				if page.Contents != nil {
+					for _, item := range page.Contents {
+						fmt.Printf("%16s %9d   s3://%s/%s\n", item.LastModified.Format(DATE_FMT), *item.Size, u.Bucket, *item.Key)
+					}
+				}
+			})
+		}
+	}
 
 	return nil
 }
