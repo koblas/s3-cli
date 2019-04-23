@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	// "log"
+
 	"github.com/urfave/cli"
 )
 
@@ -19,7 +19,7 @@ func main() {
 	cliapp := cli.NewApp()
 	cliapp.Name = "s3-cli"
 	// cliapp.Usage = ""
-	cliapp.Version = "0.2.0"
+	cliapp.Version = "0.2.2"
 
 	cli.VersionFlag = cli.BoolFlag{
 		Name:  "version, V",
@@ -42,7 +42,23 @@ func main() {
 			Usage:  "AWS Secret Key `SECRET_KEY`",
 			EnvVar: "AWS_SECRET_ACCESS_KEY,AWS_SECRET_KEY",
 		},
-
+		cli.StringFlag{
+			Name:   "storage-class",
+			Usage:  "Storage class (default: STANDARD)",
+			EnvVar: "AWS_S3_STORAGE_CLASS",
+		},
+		cli.IntFlag{
+			Name:   "concurrency",
+			Usage:  "Concurrency `NUM`",
+			EnvVar: "AWS_S3_CONCURRENCY",
+			Value:  5,
+		},
+		cli.IntFlag{
+			Name:   "part-size",
+			Usage:  "Part size `NUM` in mb",
+			EnvVar: "AWS_S3_PARTSIZE",
+			Value:  5,
+		},
 		cli.BoolFlag{
 			Name:  "recursive,r",
 			Usage: "Recursive upload, download or removal",
@@ -55,7 +71,6 @@ func main() {
 			Name:  "skip-existing",
 			Usage: "Skip over files that exist at the destination (only for [get] and [sync] commands).",
 		},
-
 		cli.BoolFlag{
 			Name:  "verbose,v",
 			Usage: "Verbose output (e.g. debugging)",
@@ -78,9 +93,14 @@ func main() {
 	//  before we get going
 	launch := func(handler CmdHandler) func(*cli.Context) error {
 		return func(c *cli.Context) error {
-			err := handler(NewConfig(c), c)
+			config, err := NewConfig(c)
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Println(err)
+				return err
+			}
+			if err := handler(config, c); err != nil {
+				fmt.Println(err)
+				return err
 			}
 			return err
 		}

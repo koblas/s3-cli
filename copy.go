@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 // Given a SRC and DST URL - copy the file
@@ -90,7 +91,10 @@ func copyToS3(config *Config, src, dst *FileURI) error {
 		return err
 	}
 
-	uploader := s3manager.NewUploaderWithClient(svc)
+	uploader := s3manager.NewUploaderWithClient(svc, func(u *s3manager.Uploader) {
+		u.PartSize = config.PartSize * 1024 * 1024
+		u.Concurrency = config.Concurrency
+	})
 
 	fd, err := os.Open(src.Path)
 	if err != nil {
@@ -102,6 +106,10 @@ func copyToS3(config *Config, src, dst *FileURI) error {
 		Bucket: aws.String(dst.Bucket), // Required
 		Key:    cleanBucketDestPath(src.Path, dst.Path),
 		Body:   fd,
+	}
+
+	if config.StorageClass != "" {
+		params.StorageClass = aws.String(config.StorageClass)
 	}
 
 	_, err = uploader.Upload(params)
