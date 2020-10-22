@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +13,7 @@ import (
 //  using standard "cp" command semantics
 //
 func CmdCopy(config *Config, c *cli.Context) error {
-	args := c.Args()
+	args := c.Args().Slice()
 
 	if len(args) < 2 {
 		return fmt.Errorf("Not enought arguments to the copy command")

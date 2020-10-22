@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"strings"
 )
 
 func GetInfo(config *Config, c *cli.Context) error {
-	args := c.Args()
+	args := c.Args().Slice()
 
 	// If we're not passed any args, we're going to do all S3 buckets
 	if len(args) == 0 {

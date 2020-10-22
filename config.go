@@ -8,7 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-ini/ini"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // This is the global configuration, it's loaded from .s3cfg (by default) then with added
@@ -57,9 +57,10 @@ var (
 func NewConfig(c *cli.Context) (*Config, error) {
 	var cfgPath string
 
-	if obj := c.GlobalStringSlice("config"); len(obj) > 1 {
-		cfgPath = obj[1]
-	} else if obj := c.StringSlice("config"); len(obj) > 1 {
+	// if obj := c.GlobalStringSlice("config"); len(obj) > 1 {
+	// cfgPath = obj[1]
+	// } else
+	if obj := c.StringSlice("config"); len(obj) > 1 {
 		cfgPath = obj[1]
 	} else if value := GetEnv("HOME"); value != nil {
 		cfgPath = path.Join(*value, ".s3cfg")
@@ -74,7 +75,7 @@ func NewConfig(c *cli.Context) (*Config, error) {
 
 	parseOptions(config, c)
 
-	if c.GlobalIsSet("no-check-md5") || c.IsSet("no-check-md5") {
+	if /*c.GlobalIsSet("no-check-md5") || */ c.IsSet("no-check-md5") {
 		config.CheckMD5 = false
 	}
 
@@ -128,7 +129,8 @@ func parseOptions(config *Config, c *cli.Context) {
 			name = strings.Replace(CamelToSnake(field.Name), "_", "-", -1)
 		}
 
-		gset := c.GlobalIsSet(name)
+		// gset := c.GlobalIsSet(name)
+		gset := false
 		lset := c.IsSet(name)
 
 		// fmt.Println(name, gset, lset, c.String(name))
@@ -149,19 +151,19 @@ func parseOptions(config *Config, c *cli.Context) {
 			if lset {
 				f.SetBool(c.Bool(name))
 			} else {
-				f.SetBool(c.GlobalBool(name))
+				// f.SetBool(c.GlobalBool(name))
 			}
 		case reflect.String:
 			if lset {
 				f.SetString(c.String(name))
 			} else {
-				f.SetString(c.GlobalString(name))
+				// f.SetString(c.GlobalString(name))
 			}
 		case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
 			if lset {
 				f.SetInt(c.Int64(name))
 			} else {
-				f.SetInt(c.GlobalInt64(name))
+				// f.SetInt(c.GlobalInt64(name))
 			}
 		}
 	}

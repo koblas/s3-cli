@@ -11,7 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"path/filepath"
 	"strings"
 )
@@ -55,7 +55,7 @@ func CmdSync(config *Config, c *cli.Context) error {
 		ACT_CHECKSUM = iota
 	)
 
-	args := c.Args()
+	args := c.Args().Slice()
 	if len(args) < 2 {
 		return fmt.Errorf("Not enough arguments")
 	}

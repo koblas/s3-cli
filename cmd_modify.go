@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func Modify(config *Config, c *cli.Context) error {
-	for _, arg := range c.Args() {
+	for _, arg := range c.Args().Slice() {
 		u, err := FileURINew(arg)
 		if err != nil {
 			return fmt.Errorf("Invalid destination argument")

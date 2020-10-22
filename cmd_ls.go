@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func ListBucket(config *Config, c *cli.Context) error {
-	args := c.Args()
+	args := c.Args().Slice()
 
 	svc := SessionNew(config)
 
