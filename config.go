@@ -8,7 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-ini/ini"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 )
 
 // This is the global configuration, it's loaded from .s3cfg (by default) then with added
@@ -37,7 +37,7 @@ type Config struct {
 
 var (
 	validStorageClasses = map[string]bool{
-		"":                                      true,
+		"": true,
 		s3.ObjectStorageClassStandard:           true,
 		s3.ObjectStorageClassReducedRedundancy:  true,
 		s3.ObjectStorageClassGlacier:            true,
@@ -57,11 +57,8 @@ var (
 func NewConfig(c *cli.Context) (*Config, error) {
 	var cfgPath string
 
-	// if obj := c.GlobalStringSlice("config"); len(obj) > 1 {
-	// cfgPath = obj[1]
-	// } else
-	if obj := c.StringSlice("config"); len(obj) > 1 {
-		cfgPath = obj[1]
+	if obj := c.StringSlice("config"); len(obj) > 0 {
+		cfgPath = obj[0]
 	} else if value := GetEnv("HOME"); value != nil {
 		cfgPath = path.Join(*value, ".s3cfg")
 	} else {
