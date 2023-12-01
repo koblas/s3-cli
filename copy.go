@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"mime"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,7 +14,8 @@ import (
 )
 
 // Given a SRC and DST URL - copy the file
-//  this is a useful helper
+//
+//	this is a useful helper
 func copyFile(config *Config, src, dst *FileURI, ensure_directory bool) error {
 	if config.Verbose {
 		fmt.Printf("Copy %s -> %s\n", src.String(), dst.String())
@@ -101,11 +103,15 @@ func copyToS3(config *Config, src, dst *FileURI) error {
 		return err
 	}
 	defer fd.Close()
-
+	var contentType *string
+	if mimeType := mime.TypeByExtension(path.Ext(src.Path)); mimeType != "" {
+		contentType = &mimeType
+	}
 	params := &s3manager.UploadInput{
-		Bucket: aws.String(dst.Bucket), // Required
-		Key:    cleanBucketDestPath(src.Path, dst.Path),
-		Body:   fd,
+		Bucket:      aws.String(dst.Bucket), // Required
+		Key:         cleanBucketDestPath(src.Path, dst.Path),
+		Body:        fd,
+		ContentType: contentType,
 	}
 
 	if config.StorageClass != "" {
@@ -121,7 +127,8 @@ func copyToS3(config *Config, src, dst *FileURI) error {
 }
 
 // Copy from S3 to S3
-//  -- if src and dst are the same it effects a "touch"
+//
+//	-- if src and dst are the same it effects a "touch"
 func copyOnS3(config *Config, src, dst *FileURI) error {
 	svc, err := SessionForBucket(config, dst.Bucket)
 	if err != nil {
@@ -152,8 +159,9 @@ func copyOnS3(config *Config, src, dst *FileURI) error {
 }
 
 // Take a src and dst and make a valid destination path for the bucket
-//  if the dst ends in "/" add the basename of the source to the object
-//  make sure the leading "/" is stripped off
+//
+//	if the dst ends in "/" add the basename of the source to the object
+//	make sure the leading "/" is stripped off
 func cleanBucketDestPath(src, dst string) *string {
 	if strings.HasSuffix(dst, "/") {
 		dst += filepath.Base(src)
