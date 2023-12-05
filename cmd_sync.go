@@ -26,7 +26,6 @@ type Action struct {
 }
 
 const (
-	NUM_COPY     = 4
 	NUM_CHECKSUM = 1
 	QUEUE_SIZE   = 1000000 // 1M
 )
@@ -160,8 +159,8 @@ func CmdSync(config *Config, c *cli.Context) error {
 		go workerChecksum(config, &wg, chanChecksum, chanProgress)
 	}
 
-	wg.Add(NUM_COPY)
-	for i := 0; i < NUM_COPY; i++ {
+	wg.Add(config.Concurrency)
+	for i := 0; i < config.Concurrency; i++ {
 		go workerCopy(config, &wg, chanCopy, chanProgress)
 	}
 
