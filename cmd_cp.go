@@ -113,7 +113,7 @@ func copyCore(config *Config, src, dst *FileURI) error {
 				}
 				dst_uri, _ := FileURINew(dst_path)
 				dst_uri.Scheme = dst.Scheme
-				src_uri, _ := FileURINew("file://" + path)
+				src_uri, _ := FileURINew(path)
 
 				return copyFile(config, src_uri, dst_uri, true)
 			})
