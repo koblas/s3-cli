@@ -37,6 +37,9 @@ func FileURINew(path string) (*FileURI, error) {
 	if uri.Path == "" && uri.Scheme == "s3" {
 		uri.Path = "/"
 	}
+	if uri.Scheme == "file" {
+		uri.Path = u.EscapedPath()
+	}
 
 	return &uri, nil
 }
