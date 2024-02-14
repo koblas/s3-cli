@@ -46,4 +46,43 @@ func TestURI(t *testing.T) {
 	if turi := uri.Join("new/file.txt"); turi.Path != "test/of/new/file.txt" {
 		t.Error("error join new/file.txt", turi.Path)
 	}
+
+	value = "test/of/test%2Fwith%2Fslashes.txt"
+	uri, err = FileURINew(value)
+	if err != nil {
+		t.Error("error parsing ", value)
+	}
+	if uri.Path != "test/of/test%2Fwith%2Fslashes.txt" || uri.Scheme != "file" || uri.Bucket != "" {
+		t.Error("error parsing ", value)
+	}
+	if uri.String() != "file://test/of/test%2Fwith%2Fslashes.txt" {
+		t.Error("roundtrip ", value, uri.String())
+	}
+
+	value = "test/of/test%2Fwith%2Fslashes and spaces.txt"
+	uri, err = FileURINew(value)
+	if err != nil {
+		t.Error("error parsing ", value)
+	}
+	if uri.Path != "test/of/test%2Fwith%2Fslashes and spaces.txt" || uri.Scheme != "file" || uri.Bucket != "" {
+		t.Error("error parsing ", value)
+	}
+	if uri.String() != "file://test/of/test%2Fwith%2Fslashes and spaces.txt" {
+		t.Error("roundtrip ", value, uri.String())
+	}
+
+	value = "s3://bucket/test/of/test%2Fwith%2Fslashes and spaces.txt"
+	uri, err = FileURINew(value)
+	if err != nil {
+		t.Error("error parsing ", value)
+	}
+	if uri.Path != "/test/of/test%2Fwith%2Fslashes and spaces.txt" {
+		t.Errorf("expected path %s; got %s", "/test/of/test%2Fwith%2Fslashes and spaces.txt", value)
+	}
+	if uri.Scheme != "s3" || uri.Bucket != "bucket" {
+		t.Error("error parsing ", value)
+	}
+	if uri.String() != "s3://bucket/test/of/test%2Fwith%2Fslashes and spaces.txt" {
+		t.Error("roundtrip ", value, uri.String())
+	}
 }

@@ -25,17 +25,15 @@ func FileURINew(path string) (*FileURI, error) {
 	uri := FileURI{
 		Scheme: u.Scheme,
 		Bucket: u.Host,
-		Path:   u.Path,
 	}
 
 	if uri.Scheme == "" {
 		uri.Scheme = "file"
 	}
-	if uri.Scheme == "s3" && uri.Path != "" {
-		uri.Path = uri.Path[1:]
-	}
-	if uri.Path == "" && uri.Scheme == "s3" {
-		uri.Path = "/"
+	if u.RawPath != "" {
+		uri.Path = u.RawPath
+	} else {
+		uri.Path = u.EscapedPath()
 	}
 
 	return &uri, nil
