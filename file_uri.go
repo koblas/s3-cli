@@ -38,7 +38,11 @@ func FileURINew(path string) (*FileURI, error) {
 		uri.Path = "/"
 	}
 	if uri.Scheme == "file" {
-		uri.Path = u.EscapedPath()
+		if u.RawPath != "" {
+			uri.Path = u.RawPath
+		} else {
+			uri.Path = u.EscapedPath()
+		}
 	}
 
 	return &uri, nil
